@@ -1,18 +1,27 @@
-import { Home, PieChart, Users, User, Settings, LogOut } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router';
+import { Home, PieChart, Users, User, Settings, LogOut,BarChart3, LayoutGrid } from 'lucide-react';
 
 interface NavItem {
   icon: typeof Home;
   label: string;
-  active: boolean;
+  path: string;
 }
 
+const NAV_ITEMS: NavItem[] = [
+  { icon: Home,     label: '홈',       path: '/dashboard' },
+  { icon: PieChart, label: '지출 분석', path: '/card/link' },
+  { icon: BarChart3, label: '자산 분석', path: '/asset/link' },
+  { icon: LayoutGrid, label: 'AI 포트폴리오 추천', path: '/portfolio/link' },
+  { icon: Users,    label: '커뮤니티',  path: '/community' },
+  { icon: User,     label: '마이페이지', path: '/mypage' },
+];
+
 export function Sidebar() {
-  const navItems: NavItem[] = [
-    { icon: Home, label: '홈', active: true },
-    { icon: PieChart, label: '지출 분석', active: false },
-    { icon: Users, label: '커뮤니티', active: false },
-    { icon: User, label: '마이페이지', active: false },
-  ];
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path: string) =>
+    path === '/dashboard' ? ['/', '/dashboard'].includes(location.pathname) : location.pathname.startsWith(path);
 
   return (
     <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col border-r border-border bg-white">
@@ -26,11 +35,12 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-6">
-        {navItems.map((item, index) => (
+        {NAV_ITEMS.map((item) => (
           <button
-            key={index}
+            key={item.path}
+            onClick={() => navigate(item.path)}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all ${
-              item.active
+              isActive(item.path)
                 ? 'bg-[#0A3D5C] text-white shadow-lg'
                 : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
             }`}
