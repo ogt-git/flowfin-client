@@ -7,6 +7,10 @@ import DashboardPage from './pages/DashboardPage';
 import CommunityListPage from './pages/community/CommunityListPage';
 import CommunityDetailPage from './pages/community/CommunityDetailPage';
 import CommunityFormPage from './pages/community/CommunityFormPage';
+import { Toaster } from './components/ui/sonner';
+import Dashboard from './pages/Dashboard';
+import CardLink from './pages/CardLink';
+import AssetLink from './pages/AssetLink';
 
 type AuthPage = 'login' | 'signup';
 
@@ -51,6 +55,10 @@ export default function App() {
             <Route path="/community/new" element={<CommunityFormPage />} />
             <Route path="/community/:id" element={<CommunityDetailPage />} />
             <Route path="/community/:id/edit" element={<CommunityFormPage />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/card/link" element={<CardLink />} />
+            <Route path="/asset/link" element={<AssetLink />} />
           </Route>
         </Routes>
       </BrowserRouter>
