@@ -2,8 +2,8 @@
 
 :root {
   --font-size: 16px;
-  --font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-  --font-family-display: 'Outfit', 'DM Sans', system-ui, sans-serif;
+  --font-family: 'DM Sans', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  --font-family-display: 'Outfit', 'DM Sans', 'Noto Sans KR', system-ui, sans-serif;
 
   --background: #FAFBFC;
   --foreground: #1A1D29;

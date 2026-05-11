@@ -8,7 +8,7 @@ interface DashboardLayoutProps {
 
 const navItems = [
   { icon: Home, label: '홈', path: '/dashboard' },
-  { icon: PieChart, label: '지출 분석', path: '/analysis' },
+  { icon: PieChart, label: '지출 분석', path: '/expenses' },
   { icon: Users, label: '커뮤니티', path: '/community' },
   { icon: User, label: '마이페이지', path: '/mypage' },
 ];

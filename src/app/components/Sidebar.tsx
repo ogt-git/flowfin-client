@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router';
 import { Home, PieChart, Users, User, Settings, LogOut,BarChart3, LayoutGrid } from 'lucide-react';
 
 interface SidebarProps {
-    onLogout: () => void;
+    onLogout?: () => void;
 }
 
 interface NavItem {
@@ -13,14 +13,14 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { icon: Home,     label: '홈',       path: '/dashboard' },
-  { icon: PieChart, label: '지출 분석', path: '/card/link' },
+  { icon: PieChart, label: '지출 분석', path: '/expenses' },
   { icon: BarChart3, label: '자산 분석', path: '/asset/link' },
   { icon: LayoutGrid, label: 'AI 포트폴리오 추천', path: '/portfolio/link' },
   { icon: Users,    label: '커뮤니티',  path: '/community' },
   { icon: User,     label: '마이페이지', path: '/mypage' },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onLogout }: SidebarProps = {}) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,7 +31,7 @@ export function Sidebar() {
         <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col border-r border-border bg-white">
             <div className="border-b border-border px-6 py-6">
                 <h2 className="text-2xl" style={{ fontFamily: 'var(--font-family-display)' }}>
-                    💰 갓생Money
+                    💰 FlowFin
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">스마트 자산관리</p>
             </div>

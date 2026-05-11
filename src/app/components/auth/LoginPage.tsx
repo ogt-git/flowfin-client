@@ -27,9 +27,10 @@ export default function LoginPage({ onNavigateToSignup, onLoginSuccess }: {
             if (!res.ok) throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.');
 
             const data = await res.json();
-            localStorage.setItem('token', data.token);
+            localStorage.setItem('token', data.accessToken);
             localStorage.setItem('name', data.name);
-            onLoginSuccess(data.token, data.name);
+            localStorage.setItem('userId', String(data.userId));
+            onLoginSuccess(data.accessToken, data.name);
         } catch (e: any) {
             setError(e.message);
         } finally {
