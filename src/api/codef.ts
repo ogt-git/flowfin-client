@@ -8,8 +8,8 @@ const api = axios.create({
 
 // HTTPS가 전송 구간 암호화 담당. 백엔드에서 RSA 암호화 후 CODEF 전달.
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = localStorage.getItem('token');
+  if (token) config.headers.set('Authorization', `Bearer ${token}`);
   return config;
 });
 

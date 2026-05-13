@@ -1,21 +1,19 @@
-import { LucideIcon } from 'lucide-react';
-
 interface CategoryCardProps {
-  icon: LucideIcon;
+  icon: string;
   name: string;
   amount: number;
   color: string;
   percentage: number;
 }
 
-export function CategoryCard({ icon: Icon, name, amount, color, percentage }: CategoryCardProps) {
+export function CategoryCard({ icon, name, amount, color, percentage }: CategoryCardProps) {
   return (
     <div className="group relative flex flex-col gap-3 rounded-2xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:shadow-lg">
       <div
         className="flex h-12 w-12 items-center justify-center rounded-xl transition-transform group-hover:scale-110"
         style={{ backgroundColor: `${color}15` }}
       >
-        <Icon className="h-6 w-6" style={{ color }} />
+        <span className="text-2xl">{icon}</span>
       </div>
 
       <div>
