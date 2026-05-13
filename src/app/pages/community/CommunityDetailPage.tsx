@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion, type Variants} from 'motion/react';
 import { ArrowLeft, Eye, Heart, MessageCircle, Pencil, Trash2, X } from 'lucide-react';
-import { fetchPost, deletePost, type PostDetail } from '../../api/community';
+import { fetchPost, deletePost, toggleLike, createComment, deleteComment, type PostDetail, type Comment } from '../../api/community';
 
 export default function CommunityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +12,8 @@ export default function CommunityDetailPage() {
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [commentInput, setCommentInput] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   const currentUser = localStorage.getItem('name') || '';
 
@@ -22,6 +24,42 @@ export default function CommunityDetailPage() {
       .catch(() => setError('게시글을 불러올 수 없습니다.'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleLike = async () => {
+    if (!post) return;
+    await toggleLike(post.id);
+    setPost((prev) => prev ? {
+      ...prev,
+      isLiked: !prev.isLiked,
+      likeCount: prev.isLiked ? prev.likeCount - 1 : prev.likeCount + 1,
+    } : prev);
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!id || !commentInput.trim()) return;
+    setSubmittingComment(true);
+    try {
+      const newComment = await createComment(Number(id), commentInput.trim());
+      setPost((prev) => prev ? {
+        ...prev,
+        comments: [...prev.comments, newComment],
+        commentCount: prev.commentCount + 1,
+      } : prev);
+      setCommentInput('');
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleCommentDelete = async (commentId: number) => {
+    if (!id) return;
+    await deleteComment(Number(id), commentId);
+    setPost((prev) => prev ? {
+      ...prev,
+      comments: prev.comments.filter((c: Comment) => c.id !== commentId),
+      commentCount: prev.commentCount - 1,
+    } : prev);
+  };
 
   const handleDelete = async () => {
     if (!id) return;
@@ -108,7 +146,12 @@ export default function CommunityDetailPage() {
             <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{post.author}</span>
               <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {post.views}</span>
-              <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {post.likeCount}</span>
+              <button
+                onClick={handleLike}
+                className={`flex items-center gap-1 transition-colors hover:text-red-500 ${post.isLiked ? 'text-red-500' : ''}`}
+              >
+                <Heart className={`h-3.5 w-3.5 ${post.isLiked ? 'fill-red-500' : ''}`} /> {post.likeCount}
+              </button>
               <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" /> {post.commentCount}</span>
             </div>
           </div>
@@ -123,15 +166,25 @@ export default function CommunityDetailPage() {
         <div className="mt-6 rounded-2xl border border-border bg-white p-6">
           <h4 className="mb-4">댓글 {post.comments.length}개</h4>
           <div className="space-y-4">
-            {post.comments.map((comment) => (
+            {post.comments.map((comment: Comment) => (
               <div key={comment.id} className="flex gap-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium">
                   {comment.author.charAt(0)}
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium">{comment.author}</span>
-                    <span className="text-xs text-muted-foreground">{comment.createdAt}</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{comment.author}</span>
+                      <span className="text-xs text-muted-foreground">{comment.createdAt}</span>
+                    </div>
+                    {comment.author === currentUser && (
+                      <button
+                        onClick={() => handleCommentDelete(comment.id)}
+                        className="text-xs text-muted-foreground hover:text-red-500 transition-colors"
+                      >
+                        삭제
+                      </button>
+                    )}
                   </div>
                   <p className="text-sm text-foreground">{comment.content}</p>
                 </div>
@@ -147,10 +200,17 @@ export default function CommunityDetailPage() {
             <div className="flex flex-1 gap-2">
               <input
                 type="text"
+                value={commentInput}
+                onChange={(e) => setCommentInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit()}
                 placeholder="댓글을 입력하세요"
                 className="flex-1 rounded-xl border border-border bg-input-background px-4 py-2 text-sm outline-none transition-all focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/10"
               />
-              <button className="rounded-xl bg-[#0A3D5C] px-4 py-2 text-sm text-white transition-colors hover:bg-[#0F4C81]">
+              <button
+                onClick={handleCommentSubmit}
+                disabled={submittingComment || !commentInput.trim()}
+                className="rounded-xl bg-[#0A3D5C] px-4 py-2 text-sm text-white transition-colors hover:bg-[#0F4C81] disabled:opacity-50"
+              >
                 등록
               </button>
             </div>
