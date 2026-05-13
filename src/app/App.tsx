@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router';
+import {Routes, Route, Navigate } from 'react-router';
 import LoginPage from './components/auth/LoginPage';
 import SignupPage from './components/auth/SignupPage';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -7,7 +7,6 @@ import DashboardPage from './pages/DashboardPage';
 import CommunityListPage from './pages/community/CommunityListPage';
 import CommunityDetailPage from './pages/community/CommunityDetailPage';
 import CommunityFormPage from './pages/community/CommunityFormPage';
-import { Toaster } from './components/ui/sonner';
 import CardLink from './pages/CardLink';
 import AssetLink from './pages/AssetLink';
 import ExpensesPage from './pages/ExpensesPage';
@@ -57,6 +56,7 @@ export default function App() {
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/card/link" element={<CardLink />} />
           <Route path="/asset/link" element={<AssetLink />} />
+
         </Route>
       </Routes>
   );

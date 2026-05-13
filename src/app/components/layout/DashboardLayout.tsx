@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router';
-import { Home, PieChart, PlusCircle, Users, User, Settings, LogOut, Bell, Search } from 'lucide-react';
+import { Home, PieChart, PlusCircle, TrendingUp, LayoutGrid, Users, User, Settings, LogOut, Bell, Search } from 'lucide-react';
 
 interface DashboardLayoutProps {
   userName: string;
@@ -8,9 +8,11 @@ interface DashboardLayoutProps {
 
 const navItems = [
   { icon: Home,        label: '홈',       path: '/dashboard' },
-  { icon: PlusCircle,  label: '지출 등록', path: '/expenses/new' },
+  { icon: PlusCircle,  label: '카드 등록', path: '/card/link' },
   { icon: PieChart,    label: '지출 분석', path: '/expenses' },
-  { icon: Users,       label: '커뮤니티',  path: '/community' },
+  { icon: TrendingUp,  label: '자산 연동',    path: '/asset/link' },
+  { icon: LayoutGrid,  label: 'AI 포트폴리오', path: '/portfolio/link' },
+  { icon: Users,       label: '커뮤니티',     path: '/community' },
   { icon: User,        label: '마이페이지', path: '/mypage' },
 ];
 
