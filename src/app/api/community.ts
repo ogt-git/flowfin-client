@@ -13,6 +13,7 @@ export interface Post {
 }
 
 export interface PostDetail extends Post {
+  isLiked: boolean;
   comments: Comment[];
 }
 
@@ -86,4 +87,22 @@ export async function deletePost(id: number): Promise<void> {
   return apiFetch(`${BASE_URL}/${id}`, {
     method: 'DELETE',
   });
+}
+
+/** 좋아요 토글 */
+export async function toggleLike(id: number): Promise<void> {
+  return apiFetch(`${BASE_URL}/like/${id}`, { method: 'POST' });
+}
+
+/** 댓글 등록 */
+export async function createComment(postId: number, content: string): Promise<Comment> {
+  return apiFetch(`${BASE_URL}/${postId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
+}
+
+/** 댓글 삭제 */
+export async function deleteComment(postId: number, commentId: number): Promise<void> {
+  return apiFetch(`${BASE_URL}/${postId}/comments/${commentId}`, { method: 'DELETE' });
 }
