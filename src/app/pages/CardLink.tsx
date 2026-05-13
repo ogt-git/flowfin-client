@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { Loader2, CreditCard, ChevronRight } from 'lucide-react';
 import { connectAccount } from '../../api/codef';
 import { CardVisual } from '../components/CardVisual';
-import { Sidebar } from '../components/Sidebar';
 import { CARD_ORGANIZATIONS } from '../../types/card';
 import type { LoginType } from '../../types/card';
 import type { CodefConnectRequest } from '../../types/codef';
@@ -71,20 +70,12 @@ export default function CardLink() {
   }
 
   return (
-      <div className="flex min-h-screen">
-        <Sidebar />
-
-        <main className="ml-64 flex-1 bg-background">
-          {/* Top Bar */}
-          <header className="sticky top-0 z-10 border-b border-border bg-white/80 backdrop-blur-xl">
-            <div className="flex items-center gap-3 px-8 py-5">
-              <CreditCard className="h-5 w-5 text-[#0A3D5C]" />
-              <h1 className="text-xl font-medium">카드 연동</h1>
-            </div>
-          </header>
-
-          <div className="p-8">
-            <form onSubmit={handleSubmit}>
+    <div className="p-8">
+      <div className="mb-6 flex items-center gap-3">
+        <CreditCard className="h-5 w-5 text-[#0A3D5C]" />
+        <h2 className="text-xl font-medium">카드 연동</h2>
+      </div>
+      <form onSubmit={handleSubmit}>
               <div className="grid gap-8 lg:grid-cols-2">
                 {/* 좌측 — 카드사 선택 + 미리보기 */}
                 <div className="space-y-6">
@@ -210,9 +201,7 @@ export default function CardLink() {
                   </div>
                 </div>
               </div>
-            </form>
-          </div>
-        </main>
-      </div>
+      </form>
+    </div>
   );
 }

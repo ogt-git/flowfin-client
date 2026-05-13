@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router';
-import { Home, PieChart, Users, User, Settings, LogOut, Bell, Search } from 'lucide-react';
+import { Home, PieChart, PlusCircle, Users, User, Settings, LogOut, Bell, Search } from 'lucide-react';
 
 interface DashboardLayoutProps {
   userName: string;
@@ -7,10 +7,11 @@ interface DashboardLayoutProps {
 }
 
 const navItems = [
-  { icon: Home, label: '홈', path: '/dashboard' },
-  { icon: PieChart, label: '지출 분석', path: '/expenses' },
-  { icon: Users, label: '커뮤니티', path: '/community' },
-  { icon: User, label: '마이페이지', path: '/mypage' },
+  { icon: Home,        label: '홈',       path: '/dashboard' },
+  { icon: PlusCircle,  label: '지출 등록', path: '/expenses/new' },
+  { icon: PieChart,    label: '지출 분석', path: '/expenses' },
+  { icon: Users,       label: '커뮤니티',  path: '/community' },
+  { icon: User,        label: '마이페이지', path: '/mypage' },
 ];
 
 export default function DashboardLayout({ userName, onLogout }: DashboardLayoutProps) {
@@ -19,6 +20,7 @@ export default function DashboardLayout({ userName, onLogout }: DashboardLayoutP
 
   const isActive = (path: string) => {
     if (path === '/community') return location.pathname.startsWith('/community');
+    if (path === '/expenses') return location.pathname === '/expenses';
     return location.pathname === path;
   };
 
@@ -28,7 +30,7 @@ export default function DashboardLayout({ userName, onLogout }: DashboardLayoutP
       <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col border-r border-border bg-white z-20">
         <div className="border-b border-border px-6 py-6">
           <h2 className="text-2xl" style={{ fontFamily: 'var(--font-family-display)' }}>
-            💰 갓생Money
+            💰 FlowFin
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">스마트 자산관리</p>
         </div>

@@ -62,7 +62,7 @@ export default function CommunityDetailPage() {
         className="p-8 max-w-3xl"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
       >
         {/* 뒤로가기 */}
         <button
@@ -108,7 +108,7 @@ export default function CommunityDetailPage() {
             <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{post.author}</span>
               <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {post.views}</span>
-              <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {post.likes}</span>
+              <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {post.likeCount}</span>
               <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" /> {post.commentCount}</span>
             </div>
           </div>

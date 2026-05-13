@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Coffee, Zap, ShoppingBag, Car, Bell, Search } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
 import { SpendingSummary } from '../components/SpendingSummary';
 import { CategoryCard } from '../components/CategoryCard';
 import { AIInsight } from '../components/AIInsight';
@@ -13,14 +13,14 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const } },
 };
 
 const CATEGORIES = [
-  { icon: Coffee,      name: '식비',   amount: 485000, color: '#F59E0B', percentage: 75 },
-  { icon: Zap,         name: '공과금', amount: 128000, color: '#8B5CF6', percentage: 45 },
-  { icon: ShoppingBag, name: '쇼핑',   amount: 320000, color: '#EC4899', percentage: 60 },
-  { icon: Car,         name: '교통',   amount: 95000,  color: '#3B82F6', percentage: 30 },
+  { icon: '☕', name: '식비',   amount: 485000, color: '#F59E0B', percentage: 75 },
+  { icon: '⚡', name: '공과금', amount: 128000, color: '#8B5CF6', percentage: 45 },
+  { icon: '🛍️', name: '쇼핑',   amount: 320000, color: '#EC4899', percentage: 60 },
+  { icon: '🚗', name: '교통',   amount: 95000,  color: '#3B82F6', percentage: 30 },
 ];
 
 const TRANSACTIONS = [

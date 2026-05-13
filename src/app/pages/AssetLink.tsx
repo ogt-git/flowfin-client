@@ -2,7 +2,6 @@ import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { Loader2, TrendingUp, ChevronRight } from 'lucide-react';
-import { Sidebar } from '../components/Sidebar';
 import { connectAccount } from '../../api/codef';
 import { STOCK_ORGANIZATIONS } from '../../types/card';
 import type { LoginType, BusinessType } from '../../types/card';
@@ -111,19 +110,12 @@ export default function AssetLink() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-
-      <main className="ml-64 flex-1 bg-background">
-        {/* Top Bar */}
-        <header className="sticky top-0 z-10 border-b border-border bg-white/80 backdrop-blur-xl">
-          <div className="flex items-center gap-3 px-8 py-5">
-            <TrendingUp className="h-5 w-5 text-[#0A3D5C]" />
-            <h1 className="text-xl font-medium">자산 연동</h1>
-          </div>
-        </header>
-
-        <div className="p-8">
+    <div className="p-8">
+      <div className="mb-6 flex items-center gap-3">
+        <TrendingUp className="h-5 w-5 text-[#0A3D5C]" />
+        <h2 className="text-xl font-medium">자산 연동</h2>
+      </div>
+      <div>
           {/* 탭 */}
           <div className="mb-8 flex gap-1 rounded-xl border border-border bg-white p-1">
             {TAB_CONFIG.map((tab) => (
@@ -335,8 +327,7 @@ export default function AssetLink() {
               </div>
             </form>
           )}
-        </div>
-      </main>
+      </div>
     </div>
   );
 }

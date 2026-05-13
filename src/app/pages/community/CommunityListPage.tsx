@@ -133,7 +133,7 @@ export default function CommunityListPage() {
                   <Eye className="h-3.5 w-3.5" /> {post.views}
                 </span>
                       <span className="flex items-center gap-1">
-                  <Heart className="h-3.5 w-3.5" /> {post.likes}
+                  <Heart className="h-3.5 w-3.5" /> {post.likeCount}
                 </span>
                       <span className="flex items-center gap-1">
                   <MessageCircle className="h-3.5 w-3.5" /> {post.commentCount}
