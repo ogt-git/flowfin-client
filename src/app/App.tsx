@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import {Routes, Route, Navigate } from 'react-router';
+import { Routes, Route, Navigate } from 'react-router';
 import LoginPage from './components/auth/LoginPage';
 import SignupPage from './components/auth/SignupPage';
 import DashboardLayout from './components/layout/DashboardLayout';

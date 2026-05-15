@@ -76,7 +76,7 @@ export default function DashboardLayout({ userName, onLogout }: DashboardLayoutP
           <div className="flex items-center justify-between px-8 py-5">
             <div>
               <p className="mb-0.5 text-sm text-muted-foreground">안녕하세요 👋</p>
-              <h1 style={{ fontFamily: 'var(--font-family-display)' }}>오늘도 갓생 살아볼까요?</h1>
+              <h1 style={{ fontFamily: 'var(--font-family-display)' }}>오늘도 잘 살아볼까요?</h1>
             </div>
             <div className="flex items-center gap-3">
               <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-white transition-colors hover:bg-secondary">
