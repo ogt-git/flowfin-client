@@ -9,6 +9,7 @@ import CommunityDetailPage from './pages/community/CommunityDetailPage';
 import CommunityFormPage from './pages/community/CommunityFormPage';
 import CardLink from './pages/CardLink';
 import AssetLink from './pages/AssetLink';
+import StockDashboardPage from './pages/StockDashboardPage';
 import ExpensesPage from './pages/ExpensesPage';
 
 type AuthPage = 'login' | 'signup';
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/card/link" element={<CardLink />} />
           <Route path="/asset/link" element={<AssetLink />} />
+          <Route path="/stocks" element={<StockDashboardPage />} />
 
         </Route>
       </Routes>

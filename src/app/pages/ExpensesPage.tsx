@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchExpenses, updateExpenseCategory, deleteExpense } from '../../api/expenses';
-import type { Expense, CategoryType } from '../../types/expense';
+import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
+import { fetchExpenses, updateExpenseCategory, deleteExpense, fetchMonthlyStats } from '../../api/expenses';
+import type { Expense, CategoryType, MonthlyStats } from '../../types/expense';
+
+Chart.register(ArcElement, DoughnutController, Tooltip);
 
 const CATEGORIES = [
   { id: 1,  name: '주거비',     type: 'FIXED'    as CategoryType },
@@ -30,6 +33,20 @@ const TYPE_BADGE: Record<CategoryType, string> = {
   ETC:      'bg-purple-100 text-purple-700',
 };
 
+const TYPE_COLORS: Record<string, string> = {
+  고정비: '#3266ad',
+  변동비: '#1D9E75',
+  비정기: '#D4537E',
+};
+
+const CAT_COLORS: Record<string, string> = {
+  식비: '#3266ad',
+  문화생활: '#1D9E75',
+  의류: '#D4537E',
+  구독: '#BA7517',
+  교통비: '#7F77DD',
+};
+
 const PAGE_SIZE = 10;
 type FilterType = 'ALL' | CategoryType;
 
@@ -48,6 +65,43 @@ function formatMonth(yyyyMM: string): string {
   return `${yyyyMM.slice(0, 4)}.${yyyyMM.slice(4)}`;
 }
 
+// ── 도넛 차트 훅 ─────────────────────────────────────────
+
+function useDoughnutChart(
+  canvasRef: React.RefObject<HTMLCanvasElement | null>,
+  labels: string[],
+  values: number[],
+  colors: string[],
+) {
+  const chartRef = useRef<Chart | null>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    chartRef.current?.destroy();
+
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: 'transparent' }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '60%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: (ctx) => ` ${ctx.label}: ${(ctx.raw as number).toLocaleString()}원` },
+          },
+        },
+      },
+    });
+
+    return () => chartRef.current?.destroy();
+  }, [labels, values, colors]);
+}
+
 export default function ExpensesPage() {
   const [month, setMonth]             = useState(() => toYYYYMM(new Date()));
   const [filterType, setFilterType]   = useState<FilterType>('ALL');
@@ -59,6 +113,8 @@ export default function ExpensesPage() {
   const [editingId, setEditingId]     = useState<number | null>(null);
   const [editCategoryId, setEditCategoryId] = useState(0);
   const [saving, setSaving]           = useState(false);
+  const [stats, setStats]             = useState<MonthlyStats | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const loadExpenses = useCallback(async () => {
     setLoading(true);
@@ -81,6 +137,10 @@ export default function ExpensesPage() {
 
   useEffect(() => { setPage(0); }, [month, filterType]);
   useEffect(() => { loadExpenses(); }, [loadExpenses]);
+
+  useEffect(() => {
+    fetchMonthlyStats(month).then(setStats).catch(() => {});
+  }, [month]);
 
   function startEdit(expense: Expense) {
     setEditingId(expense.id);
@@ -113,10 +173,39 @@ export default function ExpensesPage() {
     }
   }
 
+  // ── 차트 데이터 ────────────────────────────────────────
+
+  const { chartLabels, chartValues, chartColors } = (() => {
+    if (filterType === 'ALL' && stats) {
+      const labels = ['고정비', '변동비', '비정기'];
+      return {
+        chartLabels: labels,
+        chartValues: [stats.fixedAmount, stats.variableAmount, stats.etcAmount],
+        chartColors: labels.map((l) => TYPE_COLORS[l]),
+      };
+    }
+    const catTotals: Record<string, number> = {};
+    expenses.forEach((e) => {
+      catTotals[e.categoryName] = (catTotals[e.categoryName] ?? 0) + e.amount;
+    });
+    const labels = Object.keys(catTotals);
+    return {
+      chartLabels: labels,
+      chartValues: labels.map((c) => catTotals[c]),
+      chartColors: labels.map((c) => CAT_COLORS[c] ?? '#888'),
+    };
+  })();
+
+  const chartTotal =
+    filterType === 'ALL'
+      ? (stats?.totalAmount ?? 0)
+      : expenses.reduce((s, e) => s + e.amount, 0);
+
+  useDoughnutChart(canvasRef, chartLabels, chartValues, chartColors);
+
   const currentMonth = toYYYYMM(new Date());
   const isCurrentMonth = month >= currentMonth;
 
-  // pagination window: up to 5 pages centered around current page
   const windowStart = Math.max(0, Math.min(page - 2, totalPages - 5));
   const pageNumbers = Array.from(
     { length: Math.min(5, totalPages) },
@@ -166,117 +255,149 @@ export default function ExpensesPage() {
         </span>
       </div>
 
-      {/* List */}
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : expenses.length === 0 ? (
-        <div className="py-20 text-center text-muted-foreground">지출 내역이 없습니다.</div>
-      ) : (
-        <div className="space-y-3">
-          {expenses.map((expense) => (
-            <div
-              key={expense.id}
-              className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4"
-            >
-              <div>
-                <p className="font-medium">{expense.merchantName}</p>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  {expense.expenseDate} · {expense.cardCompany}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {editingId === expense.id ? (
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={editCategoryId}
-                      onChange={(e) => setEditCategoryId(Number(e.target.value))}
-                      className="rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-[#0A3D5C]"
-                    >
-                      {CATEGORIES.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={saveCategory}
-                      disabled={saving}
-                      className="rounded-lg bg-[#0A3D5C] px-3 py-1.5 text-sm text-white disabled:opacity-60"
-                    >
-                      {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '저장'}
-                    </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="text-sm text-muted-foreground hover:text-foreground"
-                    >
-                      취소
-                    </button>
-                  </div>
-                ) : (
-                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${TYPE_BADGE[expense.categoryType]}`}>
-                    {expense.categoryName}
-                  </span>
-                )}
-
-                <p className="w-28 text-right font-medium">
-                  -{expense.amount.toLocaleString('ko-KR')}원
-                </p>
-
-                {editingId !== expense.id && (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => startEdit(expense)}
-                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(expense.id)}
-                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-              </div>
+      {/* 본문: 목록 + 차트 */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_220px]">
+        {/* List */}
+        <div>
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ))}
-        </div>
-      )}
+          ) : expenses.length === 0 ? (
+            <div className="py-20 text-center text-muted-foreground">지출 내역이 없습니다.</div>
+          ) : (
+            <div className="space-y-3">
+              {expenses.map((expense) => (
+                <div
+                  key={expense.id}
+                  className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4"
+                >
+                  <div>
+                    <p className="font-medium">{expense.merchantName}</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                      {expense.expenseDate} · {expense.cardCompany}
+                    </p>
+                  </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-center gap-1">
-          <button
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={page === 0}
-            className="rounded-lg p-2 hover:bg-secondary disabled:opacity-30"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          {pageNumbers.map((n) => (
-            <button
-              key={n}
-              onClick={() => setPage(n)}
-              className={`h-9 w-9 rounded-lg text-sm ${
-                n === page
-                  ? 'bg-[#0A3D5C] text-white'
-                  : 'text-foreground hover:bg-secondary'
-              }`}
-            >
-              {n + 1}
-            </button>
-          ))}
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            disabled={page >= totalPages - 1}
-            className="rounded-lg p-2 hover:bg-secondary disabled:opacity-30"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+                  <div className="flex items-center gap-3">
+                    {editingId === expense.id ? (
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={editCategoryId}
+                          onChange={(e) => setEditCategoryId(Number(e.target.value))}
+                          className="rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-[#0A3D5C]"
+                        >
+                          {CATEGORIES.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={saveCategory}
+                          disabled={saving}
+                          className="rounded-lg bg-[#0A3D5C] px-3 py-1.5 text-sm text-white disabled:opacity-60"
+                        >
+                          {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '저장'}
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="text-sm text-muted-foreground hover:text-foreground"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    ) : (
+                      <span className={`rounded-full px-3 py-1 text-xs font-medium ${TYPE_BADGE[expense.categoryType]}`}>
+                        {expense.categoryName}
+                      </span>
+                    )}
+
+                    <p className="w-28 text-right font-medium">
+                      -{expense.amount.toLocaleString('ko-KR')}원
+                    </p>
+
+                    {editingId !== expense.id && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => startEdit(expense)}
+                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(expense.id)}
+                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="rounded-lg p-2 hover:bg-secondary disabled:opacity-30"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              {pageNumbers.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setPage(n)}
+                  className={`h-9 w-9 rounded-lg text-sm ${
+                    n === page
+                      ? 'bg-[#0A3D5C] text-white'
+                      : 'text-foreground hover:bg-secondary'
+                  }`}
+                >
+                  {n + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="rounded-lg p-2 hover:bg-secondary disabled:opacity-30"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* 차트 패널 */}
+        <div className="self-start rounded-xl border border-border bg-background p-4">
+          <p className="mb-1 text-xs text-muted-foreground">
+            {filterType === 'ALL' ? '이번 달 지출' : `${TYPE_LABELS[filterType as CategoryType]} 지출`}
+          </p>
+          <p className="mb-3 text-xl font-medium text-red-500">
+            -{chartTotal.toLocaleString()}원
+          </p>
+          <div className="relative h-[180px] w-full">
+            <canvas ref={canvasRef} role="img" aria-label="지출 비율 차트" />
+          </div>
+          <div className="mt-3 flex flex-col gap-1.5">
+            {chartLabels.map((lbl, i) => {
+              const pct = chartTotal > 0 ? Math.round((chartValues[i] / chartTotal) * 100) : 0;
+              return (
+                <div key={lbl} className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-sm" style={{ background: chartColors[i] }} />
+                    {lbl}
+                  </span>
+                  <span className="font-medium">{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
