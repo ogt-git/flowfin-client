@@ -46,7 +46,7 @@ export default function LoginPage({ onNavigateToSignup, onLoginSuccess }: {
                 className="w-full max-w-md rounded-3xl border border-border bg-card p-10 shadow-xl"
             >
                 <h2 className="mb-1 text-2xl" style={{ fontFamily: 'var(--font-family-display)' }}>
-                    💰 갓생Money
+                    💰 Flowfin
                 </h2>
                 <p className="mb-8 text-muted-foreground">스마트 자산관리 서비스</p>
 

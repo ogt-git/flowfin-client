@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router';
-import { Home, PieChart, PlusCircle, TrendingUp, LayoutGrid, Users, User, Settings, LogOut, Bell, Search } from 'lucide-react';
+import { Home, PieChart, PlusCircle, TrendingUp, LayoutGrid, Users, User, Settings, LogOut, Bell, Search, BarChart2 } from 'lucide-react';
 
 interface DashboardLayoutProps {
   userName: string;
@@ -7,13 +7,14 @@ interface DashboardLayoutProps {
 }
 
 const navItems = [
-  { icon: Home,        label: '홈',       path: '/dashboard' },
-  { icon: PlusCircle,  label: '카드 등록', path: '/card/link' },
-  { icon: PieChart,    label: '지출 분석', path: '/expenses' },
+  { icon: Home,        label: '홈',          path: '/dashboard' },
+  { icon: PlusCircle,  label: '카드 등록',    path: '/card/link' },
+  { icon: PieChart,    label: '지출 분석',    path: '/expenses' },
   { icon: TrendingUp,  label: '자산 연동',    path: '/asset/link' },
+  { icon: BarChart2,   label: '증권 현황',    path: '/stocks' },
   { icon: LayoutGrid,  label: 'AI 포트폴리오', path: '/portfolio/link' },
   { icon: Users,       label: '커뮤니티',     path: '/community' },
-  { icon: User,        label: '마이페이지', path: '/mypage' },
+  { icon: User,        label: '마이페이지',   path: '/mypage' },
 ];
 
 export default function DashboardLayout({ userName, onLogout }: DashboardLayoutProps) {
@@ -55,10 +56,6 @@ export default function DashboardLayout({ userName, onLogout }: DashboardLayoutP
         </nav>
 
         <div className="border-t border-border px-3 py-4 space-y-1">
-          <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
-            <Settings className="h-5 w-5" />
-            <span>설정</span>
-          </button>
           <button
             onClick={onLogout}
             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground"
@@ -76,12 +73,9 @@ export default function DashboardLayout({ userName, onLogout }: DashboardLayoutP
           <div className="flex items-center justify-between px-8 py-5">
             <div>
               <p className="mb-0.5 text-sm text-muted-foreground">안녕하세요 👋</p>
-              <h1 style={{ fontFamily: 'var(--font-family-display)' }}>오늘도 갓생 살아볼까요?</h1>
+              <h1 style={{ fontFamily: 'var(--font-family-display)' }}>오늘도 잘 살아볼까요?</h1>
             </div>
             <div className="flex items-center gap-3">
-              <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-white transition-colors hover:bg-secondary">
-                <Search className="h-5 w-5 text-muted-foreground" />
-              </button>
               <button className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-white transition-colors hover:bg-secondary">
                 <Bell className="h-5 w-5 text-muted-foreground" />
                 <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#10B981]" />
