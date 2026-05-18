@@ -33,7 +33,7 @@ const QUESTIONS: Question[] = [
             '1년 이상 ~ 3년 미만',
             '3년 이상',
         ],
-        scores: [2, 4, 6, 8, 10],
+        scores: [10, 8, 6, 4, 2],
     },
     {
         text: '내가 가장 선호하는 금융 상품은?',
@@ -336,8 +336,7 @@ export default function SignupPage({ onNavigateToLogin }: { onNavigateToLogin: (
                                 <p className="mb-1 text-sm text-muted-foreground">나의 투자성향</p>
                                 <p className={`mb-2 text-3xl font-bold ${grade.colorClass}`}>{grade.label}</p>
                                 <p className="text-sm text-muted-foreground">{grade.desc}</p>
-                                <p className="mt-3 text-xs text-muted-foreground">{totalScore}점 / 100점</p>
-                            </div>
+                                            </div>
 
                             <div className="mb-6 flex gap-1 text-center text-xs">
                                 {RISK_GRADES.map(g => (

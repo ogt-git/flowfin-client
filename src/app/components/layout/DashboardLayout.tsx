@@ -56,10 +56,6 @@ export default function DashboardLayout({ userName, onLogout }: DashboardLayoutP
         </nav>
 
         <div className="border-t border-border px-3 py-4 space-y-1">
-          <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground">
-            <Settings className="h-5 w-5" />
-            <span>설정</span>
-          </button>
           <button
             onClick={onLogout}
             className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-muted-foreground transition-all hover:bg-secondary hover:text-foreground"
@@ -80,9 +76,6 @@ export default function DashboardLayout({ userName, onLogout }: DashboardLayoutP
               <h1 style={{ fontFamily: 'var(--font-family-display)' }}>오늘도 잘 살아볼까요?</h1>
             </div>
             <div className="flex items-center gap-3">
-              <button className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-white transition-colors hover:bg-secondary">
-                <Search className="h-5 w-5 text-muted-foreground" />
-              </button>
               <button className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-white transition-colors hover:bg-secondary">
                 <Bell className="h-5 w-5 text-muted-foreground" />
                 <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#10B981]" />
