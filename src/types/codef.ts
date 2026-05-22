@@ -31,3 +31,12 @@ export interface ApiResponse<T = null> {
   message: string;
   data: T;
 }
+
+export interface CodefConnection {
+  id: number;
+  organizationCode: string;
+  accountType: 'STOCK' | 'CARD';
+  accountNumber: string;
+  isActive: boolean;
+  createdAt: string;
+}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion, type Variants} from 'motion/react';
 import { ArrowLeft, Eye, Heart, MessageCircle, Pencil, Trash2, X } from 'lucide-react';
-import { fetchPost, deletePost, toggleLike, createComment, deleteComment, type PostDetail, type Comment } from '../../api/community';
+import { fetchPost, fetchComments, deletePost, toggleLike, createComment, deleteComment, type PostDetail, type Comment } from '../../api/community';
 
 export default function CommunityDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,8 +19,11 @@ export default function CommunityDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetchPost(Number(id))
-      .then(setPost)
+    const numId = Number(id);
+    Promise.all([fetchPost(numId), fetchComments(numId)])
+      .then(([postData, comments]) => {
+        setPost({ ...postData, comments });
+      })
       .catch(() => setError('게시글을 불러올 수 없습니다.'))
       .finally(() => setLoading(false));
   }, [id]);

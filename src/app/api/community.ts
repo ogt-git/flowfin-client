@@ -94,6 +94,11 @@ export async function toggleLike(id: number): Promise<void> {
   return apiFetch(`${BASE_URL}/like/${id}`, { method: 'POST' });
 }
 
+/** 댓글 목록 조회 */
+export async function fetchComments(postId: number): Promise<Comment[]> {
+  return apiFetch(`${BASE_URL}/${postId}/comments`);
+}
+
 /** 댓글 등록 */
 export async function createComment(postId: number, content: string): Promise<Comment> {
   return apiFetch(`${BASE_URL}/${postId}/comments`, {

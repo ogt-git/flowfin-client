@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { Loader2, TrendingUp, ChevronRight } from 'lucide-react';
 import { connectAccount } from '../../api/codef';
+import { createManualAsset } from '../../api/assets';
 import { STOCK_ORGANIZATIONS } from '../../types/card';
 import type { LoginType, BusinessType } from '../../types/card';
 import type { CodefConnectRequest } from '../../types/codef';
@@ -103,10 +104,33 @@ export default function AssetLink() {
     }
   }
 
-  function handleManualSubmit(e: FormEvent) {
+  async function handleManualSubmit(e: FormEvent) {
     e.preventDefault();
-    // TODO: 직접 입력 자산 저장 API 연동 (별도 엔드포인트 추가 후 구현)
-    toast.info('직접 입력 자산 저장 기능은 추후 연동 예정입니다.');
+
+    if (!manualForm.assetName.trim()) {
+      toast.error('자산명을 입력해주세요.');
+      return;
+    }
+    if (!manualForm.purchasePrice || !manualForm.currentPrice) {
+      toast.error('취득가액과 현재가액을 입력해주세요.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await createManualAsset({
+        productType: activeTab === 'realestate' ? '부동산' : '기타',
+        itemName: manualForm.assetName.trim(),
+        purchaseAmount: Number(manualForm.purchasePrice),
+        valuationAmt: Number(manualForm.currentPrice),
+      });
+      toast.success('자산이 등록되었습니다.');
+      navigate('/stocks');
+    } catch {
+      toast.error('자산 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -319,10 +343,17 @@ export default function AssetLink() {
                 </button>
                 <button
                   type="submit"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90"
+                  disabled={loading}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
                 >
-                  저장하기
-                  <ChevronRight className="h-4 w-4" />
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      저장하기
+                      <ChevronRight className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
               </div>
             </form>

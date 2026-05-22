@@ -25,3 +25,14 @@ export async function fetchAssetSummary(): Promise<AssetSummary> {
   const res = await api.get<ApiResponse<AssetSummary>>('/api/assets/summary');
   return res.data.data;
 }
+
+export interface ManualAssetRequest {
+  productType: string;
+  itemName: string;
+  purchaseAmount: number;
+  valuationAmt: number;
+}
+
+export async function createManualAsset(payload: ManualAssetRequest): Promise<void> {
+  await api.post('/api/assets/manual', payload);
+}
