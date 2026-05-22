@@ -19,7 +19,7 @@ const itemVariants: Variants = {
 };
 
 function toYYYYMM(d: Date): string {
-  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
 interface DashboardPageProps {

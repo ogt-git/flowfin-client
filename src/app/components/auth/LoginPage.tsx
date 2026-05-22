@@ -30,6 +30,8 @@ export default function LoginPage({ onNavigateToSignup, onLoginSuccess }: {
             localStorage.setItem('token', data.accessToken);
             localStorage.setItem('name', data.name);
             localStorage.setItem('userId', String(data.userId));
+            localStorage.setItem('email', data.email ?? form.email);
+            localStorage.setItem('riskType', data.riskType ?? '');
             onLoginSuccess(data.accessToken, data.name);
         } catch (e: any) {
             setError(e.message);

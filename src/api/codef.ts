@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { CodefConnectRequest, ApiResponse, CodefSyncResult } from '../types/codef';
+import type { CodefConnectRequest, ApiResponse, CodefSyncResult, CodefConnection } from '../types/codef';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL as string,
@@ -12,6 +12,17 @@ api.interceptors.request.use((config) => {
   if (token) config.headers.set('Authorization', `Bearer ${token}`);
   return config;
 });
+
+// 연동된 계정 목록 조회 — GET /api/codef/connections
+export async function fetchConnections(): Promise<CodefConnection[]> {
+  const res = await api.get<ApiResponse<CodefConnection[]>>('/api/codef/connections');
+  return res.data.data;
+}
+
+// 연동 해제 — DELETE /api/codef/connect/{id}
+export async function deleteConnection(id: number): Promise<void> {
+  await api.delete(`/api/codef/connect/${id}`);
+}
 
 // 카드/증권 계정 연결 — POST /api/codef/connect
 export async function connectAccount(form: CodefConnectRequest): Promise<string> {

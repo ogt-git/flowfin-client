@@ -11,6 +11,9 @@ import CardLink from './pages/CardLink';
 import AssetLink from './pages/AssetLink';
 import StockDashboardPage from './pages/StockDashboardPage';
 import ExpensesPage from './pages/ExpensesPage';
+import PortfolioPage from './pages/PortfolioPage';
+import MyPage from './pages/MyPage';
+import { Toaster } from './components/ui/sonner';
 
 type AuthPage = 'login' | 'signup';
 
@@ -46,6 +49,8 @@ export default function App() {
   }
 
   return (
+      <>
+      <Toaster richColors position="top-center" />
       <Routes>
         <Route element={<DashboardLayout userName={userName} onLogout={handleLogout} />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
@@ -58,8 +63,10 @@ export default function App() {
           <Route path="/card/link" element={<CardLink />} />
           <Route path="/asset/link" element={<AssetLink />} />
           <Route path="/stocks" element={<StockDashboardPage />} />
-
+          <Route path="/portfolio/link" element={<PortfolioPage />} />
+          <Route path="/mypage" element={<MyPage onLogout={handleLogout} />} />
         </Route>
       </Routes>
+      </>
   );
 }
