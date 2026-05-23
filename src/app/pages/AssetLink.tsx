@@ -1,14 +1,15 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, useRef, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { Loader2, TrendingUp, ChevronRight } from 'lucide-react';
+import { Loader2, TrendingUp, ChevronRight, FolderOpen } from 'lucide-react';
 import { connectAccount } from '../../api/codef';
 import { createManualAsset } from '../../api/assets';
 import { STOCK_ORGANIZATIONS } from '../../types/card';
-import type { LoginType, BusinessType } from '../../types/card';
+import type { LoginType } from '../../types/card';
 import type { CodefConnectRequest } from '../../types/codef';
 
-type AssetTab = 'savings' | 'stock' | 'realestate' | 'other';
+type MainTab = 'stock' | 'manual';
+type ManualSubTab = 'savings' | 'realestate' | 'other';
 
 interface ApiLinkForm {
   organization: string;
@@ -40,31 +41,41 @@ const EMPTY_MANUAL_FORM: ManualAssetForm = {
   memo: '',
 };
 
-const TAB_CONFIG: { key: AssetTab; label: string; businessType?: BusinessType }[] = [
-  { key: 'savings', label: '💰 예·적금', businessType: 'BK' },
-  { key: 'stock',   label: '📈 주식·펀드', businessType: 'ST' },
-  { key: 'realestate', label: '🏠 부동산' },
-  { key: 'other',   label: '🚗 기타' },
+const MANUAL_SUB_TABS: { key: ManualSubTab; label: string; placeholder: string; productType: string }[] = [
+  { key: 'savings',    label: '💰 예·적금', placeholder: '예) KB 정기적금',        productType: '예적금' },
+  { key: 'realestate', label: '🏠 부동산',  placeholder: '예) 서울 강남구 아파트', productType: '부동산' },
+  { key: 'other',      label: '🚗 기타',    placeholder: '예) 자동차, 골드바',     productType: '기타'   },
 ];
 
 export default function AssetLink() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<AssetTab>('savings');
+  const [mainTab, setMainTab] = useState<MainTab>('stock');
+  const [manualSubTab, setManualSubTab] = useState<ManualSubTab>('savings');
   const [apiForm, setApiForm] = useState<ApiLinkForm>(EMPTY_API_FORM);
   const [manualForm, setManualForm] = useState<ManualAssetForm>(EMPTY_MANUAL_FORM);
+  const [certFile, setCertFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentTab = TAB_CONFIG.find((t) => t.key === activeTab)!;
-  const isApiTab = activeTab === 'savings' || activeTab === 'stock';
-
-  function handleTabChange(tab: AssetTab) {
-    setActiveTab(tab);
+  function handleMainTabChange(tab: MainTab) {
+    setMainTab(tab);
     setApiForm(EMPTY_API_FORM);
+    setCertFile(null);
+    setManualForm(EMPTY_MANUAL_FORM);
+  }
+
+  function handleSubTabChange(sub: ManualSubTab) {
+    setManualSubTab(sub);
     setManualForm(EMPTY_MANUAL_FORM);
   }
 
   function handleApiChange(e: ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
+    if (name === 'loginType') {
+      setApiForm((prev) => ({ ...prev, loginType: value as LoginType, id: '', password: '' }));
+      setCertFile(null);
+      return;
+    }
     setApiForm((prev) => ({ ...prev, [name]: value }) as ApiLinkForm);
   }
 
@@ -75,21 +86,19 @@ export default function AssetLink() {
 
   async function handleApiSubmit(e: FormEvent) {
     e.preventDefault();
-
-    if (!apiForm.organization) {
-      toast.error('기관을 선택해주세요.');
-      return;
-    }
-    if (!apiForm.id || !apiForm.password) {
-      toast.error('아이디와 비밀번호를 입력해주세요.');
-      return;
+    if (!apiForm.organization) { toast.error('기관을 선택해주세요.'); return; }
+    if (apiForm.loginType === '0') {
+      if (!certFile) { toast.error('인증서 파일을 선택해주세요.'); return; }
+      if (!apiForm.password) { toast.error('인증서 비밀번호를 입력해주세요.'); return; }
+    } else {
+      if (!apiForm.id || !apiForm.password) { toast.error('아이디와 비밀번호를 입력해주세요.'); return; }
     }
 
     setLoading(true);
     try {
       const payload: CodefConnectRequest = {
         organization: apiForm.organization,
-        businessType: currentTab.businessType!,
+        businessType: 'ST',
         loginType: apiForm.loginType,
         id: apiForm.id,
         password: apiForm.password,
@@ -106,20 +115,17 @@ export default function AssetLink() {
 
   async function handleManualSubmit(e: FormEvent) {
     e.preventDefault();
-
-    if (!manualForm.assetName.trim()) {
-      toast.error('자산명을 입력해주세요.');
-      return;
-    }
+    if (!manualForm.assetName.trim()) { toast.error('자산명을 입력해주세요.'); return; }
     if (!manualForm.purchasePrice || !manualForm.currentPrice) {
       toast.error('취득가액과 현재가액을 입력해주세요.');
       return;
     }
 
+    const subTab = MANUAL_SUB_TABS.find((s) => s.key === manualSubTab)!;
     setLoading(true);
     try {
       await createManualAsset({
-        productType: activeTab === 'realestate' ? '부동산' : '기타',
+        productType: subTab.productType,
         itemName: manualForm.assetName.trim(),
         purchaseAmount: Number(manualForm.purchasePrice),
         valuationAmt: Number(manualForm.currentPrice),
@@ -139,79 +145,132 @@ export default function AssetLink() {
         <TrendingUp className="h-5 w-5 text-[#0A3D5C]" />
         <h2 className="text-xl font-medium">자산 연동</h2>
       </div>
-      <div>
-          {/* 탭 */}
-          <div className="mb-8 flex gap-1 rounded-xl border border-border bg-white p-1">
-            {TAB_CONFIG.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => handleTabChange(tab.key)}
-                className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
-                  activeTab === tab.key
-                    ? 'bg-[#0A3D5C] text-white shadow-md'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+
+      {/* 메인 탭 */}
+      <div className="mb-4 flex gap-1 rounded-xl border border-border bg-white p-1">
+        {(['stock', 'manual'] as MainTab[]).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => handleMainTabChange(tab)}
+            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
+              mainTab === tab
+                ? 'bg-[#0A3D5C] text-white shadow-md'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab === 'stock' ? '📈 주식·펀드' : '📋 수동 자산'}
+          </button>
+        ))}
+      </div>
+
+      {/* 수동 자산 서브탭 */}
+      {mainTab === 'manual' && (
+        <div className="mb-8 flex gap-2 pl-1">
+          {MANUAL_SUB_TABS.map((sub) => (
+            <button
+              key={sub.key}
+              type="button"
+              onClick={() => handleSubTabChange(sub.key)}
+              className={`rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
+                manualSubTab === sub.key
+                  ? 'border-[#0A3D5C] bg-[#0A3D5C]/10 text-[#0A3D5C]'
+                  : 'border-border bg-white text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {sub.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 주식·펀드 API 연동 폼 */}
+      {mainTab === 'stock' && (
+        <form onSubmit={handleApiSubmit} className="mt-4 grid gap-8 lg:grid-cols-2">
+          <div>
+            <h3 className="mb-4 text-base font-medium">증권사 선택</h3>
+            <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto pr-1">
+              {STOCK_ORGANIZATIONS.map((org) => (
+                <button
+                  key={org.code}
+                  type="button"
+                  onClick={() => setApiForm((prev) => ({ ...prev, organization: org.code }))}
+                  className={`rounded-xl border px-4 py-3 text-sm font-medium transition-all text-left ${
+                    apiForm.organization === org.code
+                      ? 'border-[#0A3D5C] bg-[#0A3D5C] text-white shadow-md'
+                      : 'border-border bg-white text-foreground hover:border-[#0A3D5C]/40 hover:bg-secondary'
+                  }`}
+                >
+                  {org.name}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* API 연동 탭 (예적금 / 주식·펀드) */}
-          {isApiTab && (
-            <form onSubmit={handleApiSubmit} className="grid gap-8 lg:grid-cols-2">
-              {/* 기관 선택 */}
-              <div>
-                <h3 className="mb-4 text-base font-medium">
-                  {activeTab === 'savings' ? '은행 선택' : '증권사 선택'}
-                </h3>
-                <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto pr-1">
-                  {STOCK_ORGANIZATIONS.map((org) => (
-                    <button
-                      key={org.code}
-                      type="button"
-                      onClick={() => setApiForm((prev) => ({ ...prev, organization: org.code }))}
-                      className={`rounded-xl border px-4 py-3 text-sm font-medium transition-all text-left ${
-                        apiForm.organization === org.code
-                          ? 'border-[#0A3D5C] bg-[#0A3D5C] text-white shadow-md'
-                          : 'border-border bg-white text-foreground hover:border-[#0A3D5C]/40 hover:bg-secondary'
-                      }`}
-                    >
-                      {org.name}
-                    </button>
-                  ))}
-                </div>
+          <div className="space-y-6">
+            <div>
+              <label className="mb-3 block text-sm font-medium">로그인 방식</label>
+              <div className="flex gap-4">
+                {(
+                  [
+                    { value: '0', label: '공인인증서' },
+                    { value: '1', label: '아이디/비밀번호' },
+                  ] as { value: LoginType; label: string }[]
+                ).map((opt) => (
+                  <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="loginType"
+                      value={opt.value}
+                      checked={apiForm.loginType === opt.value}
+                      onChange={handleApiChange}
+                      className="accent-[#0A3D5C]"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
               </div>
+            </div>
 
-              {/* 입력 폼 */}
-              <div className="space-y-6">
-                {/* loginType */}
+            {apiForm.loginType === '0' ? (
+              <>
                 <div>
-                  <label className="mb-3 block text-sm font-medium">로그인 방식</label>
-                  <div className="flex gap-4">
-                    {(
-                      [
-                        { value: '0', label: '공인인증서' },
-                        { value: '1', label: '아이디/비밀번호' },
-                      ] as { value: LoginType; label: string }[]
-                    ).map((opt) => (
-                      <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm">
-                        <input
-                          type="radio"
-                          name="loginType"
-                          value={opt.value}
-                          checked={apiForm.loginType === opt.value}
-                          onChange={handleApiChange}
-                          className="accent-[#0A3D5C]"
-                        />
-                        {opt.label}
-                      </label>
-                    ))}
-                  </div>
+                  <label className="mb-2 block text-sm font-medium">인증서 파일</label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pfx,.p12"
+                    className="hidden"
+                    onChange={(e) => setCertFile(e.target.files?.[0] ?? null)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${
+                      certFile
+                        ? 'border-[#0A3D5C] bg-[#0A3D5C]/5 text-[#0A3D5C]'
+                        : 'border-border bg-input-background text-muted-foreground hover:border-[#0A3D5C]/40'
+                    }`}
+                  >
+                    <FolderOpen className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{certFile ? certFile.name : '인증서 파일 선택 (.pfx, .p12)'}</span>
+                  </button>
                 </div>
 
-                {/* id */}
+                <div>
+                  <label className="mb-2 block text-sm font-medium">인증서 비밀번호</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={apiForm.password}
+                    onChange={handleApiChange}
+                    placeholder="공인인증서 비밀번호"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
                 <div>
                   <label className="mb-2 block text-sm font-medium">아이디</label>
                   <input
@@ -224,7 +283,6 @@ export default function AssetLink() {
                   />
                 </div>
 
-                {/* password */}
                 <div>
                   <label className="mb-2 block text-sm font-medium">비밀번호</label>
                   <input
@@ -236,129 +294,116 @@ export default function AssetLink() {
                     className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
                   />
                 </div>
+              </>
+            )}
 
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-                  비밀번호는 HTTPS 암호화 채널로 전송되며 서버에 저장되지 않습니다.
-                </div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+              비밀번호는 HTTPS 암호화 채널로 전송되며 서버에 저장되지 않습니다.
+            </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate(-1)}
-                    className="flex-1 rounded-xl border border-border bg-white py-3 text-sm font-medium transition-colors hover:bg-secondary"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
-                  >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        자산 연동하기
-                        <ChevronRight className="h-4 w-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </form>
-          )}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="flex-1 rounded-xl border border-border bg-white py-3 text-sm font-medium transition-colors hover:bg-secondary"
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>자산 연동하기 <ChevronRight className="h-4 w-4" /></>}
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
 
-          {/* 직접 입력 탭 (부동산 / 기타) */}
-          {!isApiTab && (
-            <form onSubmit={handleManualSubmit} className="max-w-lg space-y-6">
-              <div>
-                <label className="mb-2 block text-sm font-medium">자산명</label>
-                <input
-                  type="text"
-                  name="assetName"
-                  value={manualForm.assetName}
-                  onChange={handleManualChange}
-                  placeholder={activeTab === 'realestate' ? '예) 서울 강남구 아파트' : '예) 자동차, 골드바'}
-                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-                />
-              </div>
+      {/* 수동 자산 입력 폼 */}
+      {mainTab === 'manual' && (
+        <form onSubmit={handleManualSubmit} className="max-w-lg space-y-6">
+          <div>
+            <label className="mb-2 block text-sm font-medium">자산명</label>
+            <input
+              type="text"
+              name="assetName"
+              value={manualForm.assetName}
+              onChange={handleManualChange}
+              placeholder={MANUAL_SUB_TABS.find((s) => s.key === manualSubTab)!.placeholder}
+              className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+            />
+          </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium">취득가액 (원)</label>
-                  <input
-                    type="number"
-                    name="purchasePrice"
-                    value={manualForm.purchasePrice}
-                    onChange={handleManualChange}
-                    placeholder="0"
-                    min="0"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium">현재가액 (원)</label>
-                  <input
-                    type="number"
-                    name="currentPrice"
-                    value={manualForm.currentPrice}
-                    onChange={handleManualChange}
-                    placeholder="0"
-                    min="0"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-                  />
-                </div>
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-2 block text-sm font-medium">취득가액 (원)</label>
+              <input
+                type="number"
+                name="purchasePrice"
+                value={manualForm.purchasePrice}
+                onChange={handleManualChange}
+                placeholder="0"
+                min="0"
+                className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium">현재가액 (원)</label>
+              <input
+                type="number"
+                name="currentPrice"
+                value={manualForm.currentPrice}
+                onChange={handleManualChange}
+                placeholder="0"
+                min="0"
+                className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+              />
+            </div>
+          </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">취득일자</label>
-                <input
-                  type="date"
-                  name="purchaseDate"
-                  value={manualForm.purchaseDate}
-                  onChange={handleManualChange}
-                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-                />
-              </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium">취득일자</label>
+            <input
+              type="date"
+              name="purchaseDate"
+              value={manualForm.purchaseDate}
+              onChange={handleManualChange}
+              className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+            />
+          </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">메모 (선택)</label>
-                <textarea
-                  name="memo"
-                  value={manualForm.memo}
-                  onChange={handleManualChange}
-                  rows={3}
-                  placeholder="추가 메모를 입력하세요"
-                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20 resize-none"
-                />
-              </div>
+          <div>
+            <label className="mb-2 block text-sm font-medium">메모 (선택)</label>
+            <textarea
+              name="memo"
+              value={manualForm.memo}
+              onChange={handleManualChange}
+              rows={3}
+              placeholder="추가 메모를 입력하세요"
+              className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20 resize-none"
+            />
+          </div>
 
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => navigate(-1)}
-                  className="flex-1 rounded-xl border border-border bg-white py-3 text-sm font-medium transition-colors hover:bg-secondary"
-                >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      저장하기
-                      <ChevronRight className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-      </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="flex-1 rounded-xl border border-border bg-white py-3 text-sm font-medium transition-colors hover:bg-secondary"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>저장하기 <ChevronRight className="h-4 w-4" /></>}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
