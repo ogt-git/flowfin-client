@@ -24,8 +24,14 @@ export interface FetchExpensesParams {
   size?: number;
 }
 
+function toApiMonth(month: string): string {
+  // Internal state uses YYYYMM; backend expects YYYY-MM
+  return month.length === 6 ? `${month.slice(0, 4)}-${month.slice(4)}` : month;
+}
+
 export async function fetchExpenses(params: FetchExpensesParams): Promise<ExpensePage> {
-  const res = await api.get<ApiResponse<ExpensePage>>('/api/expenses', { params });
+  const apiParams = params.month ? { ...params, month: toApiMonth(params.month) } : params;
+  const res = await api.get<ApiResponse<ExpensePage>>('/api/expenses', { params: apiParams });
   return res.data.data;
 }
 
@@ -43,6 +49,6 @@ export async function deleteExpense(id: number): Promise<void> {
 }
 
 export async function fetchMonthlyStats(month: string): Promise<MonthlyStats> {
-  const res = await api.get<ApiResponse<MonthlyStats>>('/api/expenses/stats', { params: { month } });
+  const res = await api.get<ApiResponse<MonthlyStats>>('/api/expenses/stats', { params: { month: toApiMonth(month) } });
   return res.data.data;
 }
