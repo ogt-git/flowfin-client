@@ -31,7 +31,8 @@ const RISK_LABEL: Record<string, { label: string; color: string; bg: string }> =
   AGGRESSIVE:              { label: '공격투자형', color: 'text-red-700',    bg: 'bg-red-50' },
 };
 
-function formatAmount(n: number) {
+function formatAmount(n: number | undefined | null) {
+  if (n == null) return '-';
   if (Math.abs(n) >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
   if (Math.abs(n) >= 10_000) return `${(n / 10_000).toFixed(0)}만`;
   return n.toLocaleString();
@@ -206,7 +207,7 @@ function HistoryItem({ portfolio }: { portfolio: Portfolio }) {
       </button>
       {open && (
         <div className="border-t border-border px-5 pb-4 pt-3 space-y-2">
-          {portfolio.recommendedAssets.map((asset: RecommendedAsset, i: number) => (
+          {(portfolio.recommendedAssets ?? []).map((asset: RecommendedAsset, i: number) => (
             <div key={i} className={`flex items-center gap-4 rounded-xl px-4 py-3 ${i % 2 === 0 ? 'bg-white' : 'bg-secondary/30'}`}>
               <div className="flex h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
               <div className="flex-1">
@@ -247,7 +248,7 @@ function PortfolioHistoryTab() {
 
   return (
     <div className="space-y-3">
-      {history.map((p) => <HistoryItem key={p.id} portfolio={p} />)}
+      {history.map((p, i) => <HistoryItem key={p.id ?? i} portfolio={p} />)}
     </div>
   );
 }

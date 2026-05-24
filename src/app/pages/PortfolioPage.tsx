@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { motion, type Variants } from 'motion/react';
 import { LayoutGrid, Loader2, RefreshCw, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -28,7 +29,8 @@ const RISK_LABEL: Record<string, { label: string; color: string; bg: string }> =
   AGGRESSIVE:             { label: '공격투자형',   color: 'text-red-700',    bg: 'bg-red-50' },
 };
 
-function formatAmount(n: number) {
+function formatAmount(n: number | undefined | null) {
+  if (n == null) return '-';
   if (Math.abs(n) >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
   if (Math.abs(n) >= 10_000) return `${(n / 10_000).toFixed(0)}만`;
   return n.toLocaleString();
@@ -91,7 +93,7 @@ function HistoryItem({ portfolio }: { portfolio: Portfolio }) {
       </button>
       {open && (
         <div className="border-t border-border px-5 pb-4 pt-3 space-y-2">
-          {portfolio.recommendedAssets.map((a, i) => (
+          {(portfolio.recommendedAssets ?? []).map((a, i) => (
             <AllocationRow key={i} asset={a} index={i} />
           ))}
         </div>
@@ -129,6 +131,13 @@ export default function PortfolioPage() {
       const result = await recommendPortfolio();
       setPortfolio(result);
       setHistory((prev) => [result, ...prev]);
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 429) {
+        toast.error('요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        toast.error('포트폴리오 추천에 실패했습니다.');
+      }
     } finally {
       setRecommending(false);
     }
@@ -156,7 +165,7 @@ export default function PortfolioPage() {
     );
   }
 
-  const chartData = portfolio?.recommendedAssets.map((a) => ({ name: a.assetClass, value: a.ratio })) ?? [];
+  const chartData = portfolio?.recommendedAssets?.map((a) => ({ name: a.assetClass, value: a.ratio })) ?? [];
 
   return (
     <motion.div
@@ -258,7 +267,7 @@ export default function PortfolioPage() {
 
               {/* 배분 목록 */}
               <div className="space-y-2 lg:col-span-2">
-                {portfolio.recommendedAssets.map((asset, i) => (
+                {(portfolio.recommendedAssets ?? []).map((asset, i) => (
                   <AllocationRow key={i} asset={asset} index={i} />
                 ))}
               </div>
@@ -270,8 +279,8 @@ export default function PortfolioPage() {
             <motion.div variants={itemVariants}>
               <h3 className="mb-4 font-medium">추천 이력</h3>
               <div className="space-y-3">
-                {history.slice(1).map((p) => (
-                  <HistoryItem key={p.id} portfolio={p} />
+                {history.slice(1).map((p, i) => (
+                  <HistoryItem key={p.id ?? i} portfolio={p} />
                 ))}
               </div>
             </motion.div>
