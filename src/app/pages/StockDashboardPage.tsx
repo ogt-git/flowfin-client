@@ -21,14 +21,16 @@ const CHART_COLORS = [
   '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6',
 ];
 
-function formatAmount(n: number) {
-  if (Math.abs(n) >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
-  if (Math.abs(n) >= 10_000) return `${(n / 10_000).toFixed(0)}만`;
-  return n.toLocaleString();
+function formatAmount(n: number | undefined | null) {
+  const v = n ?? 0;
+  if (Math.abs(v) >= 100_000_000) return `${(v / 100_000_000).toFixed(1)}억`;
+  if (Math.abs(v) >= 10_000) return `${(v / 10_000).toFixed(0)}만`;
+  return v.toLocaleString();
 }
 
-function formatMoney(n: number) {
-  return `${n < 0 ? '-' : ''}${Math.abs(n).toLocaleString()}원`;
+function formatMoney(n: number | undefined | null) {
+  const v = n ?? 0;
+  return `${v < 0 ? '-' : ''}${Math.abs(v).toLocaleString()}원`;
 }
 
 function SummaryCard({
@@ -66,7 +68,9 @@ function SummaryCard({
 }
 
 function StockRow({ item, index }: { item: AssetItem; index: number }) {
-  const isPositive = item.valuationPl >= 0;
+  const pl = item.valuationPl ?? 0;
+  const rate = item.earningsRate ?? 0;
+  const isPositive = pl >= 0;
   return (
     <tr className={index % 2 === 0 ? 'bg-white' : 'bg-secondary/30'}>
       <td className="px-4 py-3">
@@ -76,14 +80,14 @@ function StockRow({ item, index }: { item: AssetItem; index: number }) {
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-center">{item.productType}</td>
-      <td className="px-4 py-3 text-sm text-right">{item.quantity.toLocaleString()}</td>
-      <td className="px-4 py-3 text-sm text-right">{item.purchaseAmount.toLocaleString()}원</td>
-      <td className="px-4 py-3 text-sm text-right">{item.valuationAmt.toLocaleString()}원</td>
+      <td className="px-4 py-3 text-sm text-right">{(item.quantity ?? 0).toLocaleString()}</td>
+      <td className="px-4 py-3 text-sm text-right">{(item.purchaseAmount ?? 0).toLocaleString()}원</td>
+      <td className="px-4 py-3 text-sm text-right">{(item.valuationAmt ?? 0).toLocaleString()}원</td>
       <td className={`px-4 py-3 text-sm text-right font-medium ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
-        {isPositive ? '+' : ''}{item.valuationPl.toLocaleString()}원
+        {isPositive ? '+' : ''}{pl.toLocaleString()}원
       </td>
       <td className={`px-4 py-3 text-sm text-right font-medium ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
-        {isPositive ? '+' : ''}{item.earningsRate.toFixed(2)}%
+        {isPositive ? '+' : ''}{rate.toFixed(2)}%
       </td>
     </tr>
   );
@@ -168,7 +172,7 @@ export default function StockDashboardPage() {
             onClick={() => navigate('/asset/link')}
             className="flex items-center gap-2 rounded-xl bg-[#0A3D5C] px-4 py-2 text-sm text-white hover:bg-[#0A3D5C]/90"
           >
-            <PlusCircle className="h-4 w-4" /> 계좌 추가
+            <PlusCircle className="h-4 w-4" /> 증권 계좌 연동하기
           </button>
         </div>
       </motion.div>
@@ -182,7 +186,7 @@ export default function StockDashboardPage() {
           />
           <SummaryCard
             label="예수금"
-            value={`${formatAmount(summary.accounts.reduce((s, a) => s + a.depositReceived, 0))}원`}
+            value={`${formatAmount((summary.accounts ?? []).reduce((s, a) => s + (a.depositReceived ?? 0), 0))}원`}
           />
           <SummaryCard
             label="평가 손익"
@@ -192,9 +196,9 @@ export default function StockDashboardPage() {
           />
           <SummaryCard
             label="수익률"
-            value={`${summary.totalEarningsRate >= 0 ? '+' : ''}${summary.totalEarningsRate.toFixed(2)}%`}
+            value={`${(summary.totalEarningsRate ?? 0) >= 0 ? '+' : ''}${(summary.totalEarningsRate ?? 0).toFixed(2)}%`}
             sub={`매입 ${formatAmount(summary.totalPurchaseAmount)}원`}
-            positive={summary.totalEarningsRate >= 0}
+            positive={(summary.totalEarningsRate ?? 0) >= 0}
           />
         </motion.div>
       )}
@@ -204,10 +208,10 @@ export default function StockDashboardPage() {
           <TrendingUp className="h-12 w-12 text-muted-foreground/40" />
           <p className="text-muted-foreground">보유 종목이 없습니다.</p>
           <button
-            onClick={() => navigate('/asset/link')}
+            onClick={() => navigate('/portfolio/link')}
             className="flex items-center gap-2 rounded-xl bg-[#0A3D5C] px-5 py-2.5 text-sm text-white hover:bg-[#0A3D5C]/90"
           >
-            <PlusCircle className="h-4 w-4" /> 증권 계좌 연동하기
+            <TrendingUp className="h-4 w-4" /> 포트폴리오 보기
           </button>
         </motion.div>
       ) : (
