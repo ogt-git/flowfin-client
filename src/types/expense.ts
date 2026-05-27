@@ -2,7 +2,7 @@ export type CategoryType = 'FIXED' | 'VARIABLE' | 'ETC';
 export type ClassifiedBy = 'RULE' | 'AI' | 'USER';
 
 export interface Expense {
-  id: number;
+  expenseId: number;
   cardCompany: string;
   amount: number;
   merchantName: string;
@@ -21,6 +21,7 @@ export interface ExpensePage {
   totalPages: number;
   number: number;
   size: number;
+  totalAmount: number;
 }
 
 export interface CategoryStat {

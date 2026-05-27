@@ -5,8 +5,12 @@ export interface CodefConnectRequest {
   organization: string;
   businessType: 'CD' | 'BK' | 'ST';
   loginType: '0' | '1';
-  id: string;
-  password: string; // 전송 전 AES-256 암호화 적용
+  id?: string;
+  password: string;
+  birthDate?: string;
+  accountNumber?: string;
+  derFile?: File;
+  keyFile?: File;
 }
 
 // 카드 청구내역 조회 Request — 백엔드 CodefCardRequest DTO

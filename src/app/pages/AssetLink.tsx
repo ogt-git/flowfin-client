@@ -53,15 +53,26 @@ export default function AssetLink() {
   const [manualSubTab, setManualSubTab] = useState<ManualSubTab>('savings');
   const [apiForm, setApiForm] = useState<ApiLinkForm>(EMPTY_API_FORM);
   const [manualForm, setManualForm] = useState<ManualAssetForm>(EMPTY_MANUAL_FORM);
-  const [certFile, setCertFile] = useState<File | null>(null);
+  const [derFile, setDerFile] = useState<File | null>(null);
+  const [keyFile, setKeyFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderRef = useRef<HTMLInputElement>(null);
 
   function handleMainTabChange(tab: MainTab) {
     setMainTab(tab);
     setApiForm(EMPTY_API_FORM);
-    setCertFile(null);
+    setDerFile(null);
+    setKeyFile(null);
     setManualForm(EMPTY_MANUAL_FORM);
+  }
+
+  function handleFolderSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    const der = files.find((f) => f.name.toLowerCase().endsWith('.der')) ?? null;
+    const key = files.find((f) => f.name.toLowerCase().endsWith('.key')) ?? null;
+    setDerFile(der);
+    setKeyFile(key);
+    if (!der || !key) toast.error('선택한 폴더에서 공인인증서 파일(.der, .key)을 찾을 수 없습니다.');
   }
 
   function handleSubTabChange(sub: ManualSubTab) {
@@ -73,7 +84,8 @@ export default function AssetLink() {
     const { name, value } = e.target;
     if (name === 'loginType') {
       setApiForm((prev) => ({ ...prev, loginType: value as LoginType, id: '', password: '' }));
-      setCertFile(null);
+      setDerFile(null);
+      setKeyFile(null);
       return;
     }
     setApiForm((prev) => ({ ...prev, [name]: value }) as ApiLinkForm);
@@ -88,7 +100,8 @@ export default function AssetLink() {
     e.preventDefault();
     if (!apiForm.organization) { toast.error('기관을 선택해주세요.'); return; }
     if (apiForm.loginType === '0') {
-      if (!certFile) { toast.error('인증서 파일을 선택해주세요.'); return; }
+      if (!derFile) { toast.error('인증서 파일(.der)을 선택해주세요.'); return; }
+      if (!keyFile) { toast.error('개인키 파일(.key)을 선택해주세요.'); return; }
       if (!apiForm.password) { toast.error('인증서 비밀번호를 입력해주세요.'); return; }
     } else {
       if (!apiForm.id || !apiForm.password) { toast.error('아이디와 비밀번호를 입력해주세요.'); return; }
@@ -102,10 +115,11 @@ export default function AssetLink() {
         loginType: apiForm.loginType,
         id: apiForm.id,
         password: apiForm.password,
+        ...(apiForm.loginType === '0' && { derFile: derFile!, keyFile: keyFile! }),
       };
       await connectAccount(payload);
-      toast.success('자산 연동이 완료되었습니다.');
-      navigate('/dashboard');
+      toast.success('자산 연동이 완료되었습니다. 데이터는 약 10초 후 자동으로 불러와집니다.');
+      navigate('/stocks');
     } catch {
       toast.error('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
     } finally {
@@ -235,28 +249,32 @@ export default function AssetLink() {
             {apiForm.loginType === '0' ? (
               <>
                 <div>
-                  <label className="mb-2 block text-sm font-medium">인증서 파일</label>
+                  <label className="mb-2 block text-sm font-medium">공인인증서 폴더</label>
                   <input
-                    ref={fileInputRef}
+                    ref={folderRef}
                     type="file"
-                    accept=".pfx,.p12"
                     className="hidden"
-                    onChange={(e) => setCertFile(e.target.files?.[0] ?? null)}
+                    multiple
+                    {...{ webkitdirectory: '' }}
+                    onChange={handleFolderSelect}
                   />
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => folderRef.current?.click()}
                     className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${
-                      certFile
-                        ? 'border-[#0A3D5C] bg-[#0A3D5C]/5 text-[#0A3D5C]'
-                        : 'border-border bg-input-background text-muted-foreground hover:border-[#0A3D5C]/40'
+                      derFile && keyFile ? 'border-[#0A3D5C] bg-[#0A3D5C]/5 text-[#0A3D5C]' : 'border-border bg-input-background text-muted-foreground hover:border-[#0A3D5C]/40'
                     }`}
                   >
                     <FolderOpen className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{certFile ? certFile.name : '인증서 파일 선택 (.pfx, .p12)'}</span>
+                    <span>{derFile && keyFile ? '인증서 확인됨' : '인증서 폴더 선택'}</span>
                   </button>
+                  {(derFile || keyFile) && (
+                    <div className="mt-2 space-y-1 text-xs">
+                      <p className={derFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{derFile ? `✓ ${derFile.name}` : '✗ .der 파일 없음'}</p>
+                      <p className={keyFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{keyFile ? `✓ ${keyFile.name}` : '✗ .key 파일 없음'}</p>
+                    </div>
+                  )}
                 </div>
-
                 <div>
                   <label className="mb-2 block text-sm font-medium">인증서 비밀번호</label>
                   <input
