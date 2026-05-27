@@ -25,6 +25,7 @@ export async function connectAccount(form: CodefConnectRequest): Promise<string>
   if (form.id) formData.append('id', form.id);
   if (form.birthDate) formData.append('birthDate', form.birthDate);
   if (form.accountNumber) formData.append('accountNumber', form.accountNumber);
+  if (form.accountPassword) formData.append('accountPassword', form.accountPassword);
   if (form.derFile) formData.append('derFile', form.derFile);
   if (form.keyFile) formData.append('keyFile', form.keyFile);
 

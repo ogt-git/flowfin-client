@@ -193,6 +193,12 @@ export default function CardLink() {
                             <p className={keyFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{keyFile ? `✓ ${keyFile.name}` : '✗ .key 파일 없음'}</p>
                           </div>
                         )}
+                        <div className="mt-2 rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                          <p className="font-medium text-foreground">인증서 위치 안내</p>
+                          <p>Windows: <span className="font-mono">C:\Users\사용자명\AppData\LocalLow\NPKI</span></p>
+                          <p>Windows (공용): <span className="font-mono">C:\NPKI</span></p>
+                          <p>Mac: <span className="font-mono">~/Library/Preferences/NPKI</span></p>
+                        </div>
                       </div>
                       <div>
                         <label className="mb-2 block text-sm font-medium text-foreground">인증서 비밀번호</label>

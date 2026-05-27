@@ -9,6 +9,7 @@ export interface CodefConnectRequest {
   password: string;
   birthDate?: string;
   accountNumber?: string;
+  accountPassword?: string;
   derFile?: File;
   keyFile?: File;
 }
