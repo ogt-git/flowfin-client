@@ -103,7 +103,7 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
           <div className="grid gap-4 lg:grid-cols-2">
             {recentExpenses.map((expense) => (
               <RecentTransaction
-                key={expense.id}
+                key={expense.expenseId}
                 merchant={expense.merchantName}
                 date={expense.expenseDate}
                 amount={expense.amount}

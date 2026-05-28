@@ -109,6 +109,7 @@ export default function ExpensesPage() {
   const [expenses, setExpenses]       = useState<Expense[]>([]);
   const [totalPages, setTotalPages]   = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading]         = useState(false);
   const [editingId, setEditingId]     = useState<number | null>(null);
   const [editCategoryId, setEditCategoryId] = useState(0);
@@ -128,6 +129,7 @@ export default function ExpensesPage() {
       setExpenses(result.content);
       setTotalPages(result.totalPages);
       setTotalElements(result.totalElements);
+      setTotalAmount(result.totalAmount ?? 0);
     } catch {
       toast.error('지출 내역을 불러오지 못했습니다.');
     } finally {
@@ -143,7 +145,7 @@ export default function ExpensesPage() {
   }, [month]);
 
   function startEdit(expense: Expense) {
-    setEditingId(expense.id);
+    setEditingId(expense.expenseId);
     setEditCategoryId(expense.categoryId);
   }
 
@@ -196,10 +198,7 @@ export default function ExpensesPage() {
     };
   })();
 
-  const chartTotal =
-    filterType === 'ALL'
-      ? (stats?.totalAmount ?? 0)
-      : expenses.reduce((s, e) => s + e.amount, 0);
+  const chartTotal = filterType === 'ALL' ? (stats?.totalAmount ?? 0) : totalAmount;
 
   useDoughnutChart(canvasRef, chartLabels, chartValues, chartColors);
 
@@ -269,7 +268,7 @@ export default function ExpensesPage() {
             <div className="space-y-3">
               {expenses.map((expense) => (
                 <div
-                  key={expense.id}
+                  key={expense.expenseId}
                   className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4"
                 >
                   <div>
@@ -280,7 +279,7 @@ export default function ExpensesPage() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {editingId === expense.id ? (
+                    {editingId === expense.expenseId ? (
                       <div className="flex items-center gap-2">
                         <select
                           value={editCategoryId}
@@ -315,7 +314,7 @@ export default function ExpensesPage() {
                       -{expense.amount.toLocaleString('ko-KR')}원
                     </p>
 
-                    {editingId !== expense.id && (
+                    {editingId !== expense.expenseId && (
                       <div className="flex gap-1">
                         <button
                           onClick={() => startEdit(expense)}
@@ -324,7 +323,7 @@ export default function ExpensesPage() {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(expense.id)}
+                          onClick={() => handleDelete(expense.expenseId)}
                           className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500"
                         >
                           <Trash2 className="h-4 w-4" />

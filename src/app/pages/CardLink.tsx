@@ -1,7 +1,7 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, useRef, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
-import { Loader2, CreditCard, ChevronRight } from 'lucide-react';
+import { Loader2, CreditCard, ChevronRight, FolderOpen } from 'lucide-react';
 import { connectAccount } from '../../api/codef';
 import { CardVisual } from '../components/CardVisual';
 import { CARD_ORGANIZATIONS } from '../../types/card';
@@ -25,9 +25,21 @@ const EMPTY_FORM: CardLinkForm = {
 export default function CardLink() {
   const navigate = useNavigate();
   const [form, setForm] = useState<CardLinkForm>(EMPTY_FORM);
+  const [derFile, setDerFile] = useState<File | null>(null);
+  const [keyFile, setKeyFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const folderRef = useRef<HTMLInputElement>(null);
 
   const selectedCard = CARD_ORGANIZATIONS.find((c) => c.code === form.organization);
+
+  function handleFolderSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    const der = files.find((f) => f.name.toLowerCase().endsWith('.der')) ?? null;
+    const key = files.find((f) => f.name.toLowerCase().endsWith('.key')) ?? null;
+    setDerFile(der);
+    setKeyFile(key);
+    if (!der || !key) toast.error('선택한 폴더에서 공인인증서 파일(.der, .key)을 찾을 수 없습니다.');
+  }
 
   function handleOrg(code: string) {
     setForm((prev) => ({ ...prev, organization: code }));
@@ -35,6 +47,12 @@ export default function CardLink() {
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
+    if (name === 'loginType') {
+      setForm((prev) => ({ ...prev, loginType: value as LoginType, id: '', password: '' }));
+      setDerFile(null);
+      setKeyFile(null);
+      return;
+    }
     setForm((prev) => ({ ...prev, [name]: value }) as CardLinkForm);
   }
 
@@ -45,9 +63,15 @@ export default function CardLink() {
       toast.error('카드사를 선택해주세요.');
       return;
     }
-    if (!form.id || !form.password) {
-      toast.error('아이디와 비밀번호를 입력해주세요.');
-      return;
+    if (form.loginType === '0') {
+      if (!derFile) { toast.error('인증서 파일(.der)을 선택해주세요.'); return; }
+      if (!keyFile) { toast.error('개인키 파일(.key)을 선택해주세요.'); return; }
+      if (!form.password) { toast.error('인증서 비밀번호를 입력해주세요.'); return; }
+    } else {
+      if (!form.id || !form.password) {
+        toast.error('아이디와 비밀번호를 입력해주세요.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -58,10 +82,11 @@ export default function CardLink() {
         loginType: form.loginType,
         id: form.id,
         password: form.password,
+        ...(form.loginType === '0' && { derFile: derFile!, keyFile: keyFile! }),
       };
       await connectAccount(payload);
-      toast.success('카드 연동이 완료되었습니다.');
-      navigate('/dashboard');
+      toast.success('카드 연동이 완료되었습니다. 잠시 후 지출내역 페이지로 이동합니다.');
+      setTimeout(() => navigate('/expenses'), 12000);
     } catch {
       toast.error('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
     } finally {
@@ -140,35 +165,79 @@ export default function CardLink() {
                     </div>
                   </div>
 
-                  {/* id */}
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-foreground">
-                      아이디
-                    </label>
-                    <input
-                        type="text"
-                        name="id"
-                        value={form.id}
-                        onChange={handleChange}
-                        placeholder="금융기관 로그인 아이디"
-                        className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-                    />
-                  </div>
-
-                  {/* password */}
-                  <div>
-                    <label className="mb-2 block text-sm font-medium text-foreground">
-                      비밀번호
-                    </label>
-                    <input
-                        type="password"
-                        name="password"
-                        value={form.password}
-                        onChange={handleChange}
-                        placeholder="금융기관 로그인 비밀번호"
-                        className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-                    />
-                  </div>
+                  {form.loginType === '0' ? (
+                    <>
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-foreground">공인인증서 폴더</label>
+                        <input
+                          ref={folderRef}
+                          type="file"
+                          className="hidden"
+                          multiple
+                          {...{ webkitdirectory: '' }}
+                          onChange={handleFolderSelect}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => folderRef.current?.click()}
+                          className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${
+                            derFile && keyFile ? 'border-[#0A3D5C] bg-[#0A3D5C]/5 text-[#0A3D5C]' : 'border-border bg-input-background text-muted-foreground hover:border-[#0A3D5C]/40'
+                          }`}
+                        >
+                          <FolderOpen className="h-4 w-4 shrink-0" />
+                          <span>{derFile && keyFile ? '인증서 확인됨' : '인증서 폴더 선택'}</span>
+                        </button>
+                        {(derFile || keyFile) && (
+                          <div className="mt-2 space-y-1 text-xs">
+                            <p className={derFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{derFile ? `✓ ${derFile.name}` : '✗ .der 파일 없음'}</p>
+                            <p className={keyFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{keyFile ? `✓ ${keyFile.name}` : '✗ .key 파일 없음'}</p>
+                          </div>
+                        )}
+                        <div className="mt-2 rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                          <p className="font-medium text-foreground">인증서 위치 안내</p>
+                          <p>Windows: <span className="font-mono">C:\Users\사용자명\AppData\LocalLow\NPKI</span></p>
+                          <p>Windows (공용): <span className="font-mono">C:\NPKI</span></p>
+                          <p>Mac: <span className="font-mono">~/Library/Preferences/NPKI</span></p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-foreground">인증서 비밀번호</label>
+                        <input
+                          type="password"
+                          name="password"
+                          value={form.password}
+                          onChange={handleChange}
+                          placeholder="공인인증서 비밀번호"
+                          className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-foreground">아이디</label>
+                        <input
+                          type="text"
+                          name="id"
+                          value={form.id}
+                          onChange={handleChange}
+                          placeholder="금융기관 로그인 아이디"
+                          className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-medium text-foreground">비밀번호</label>
+                        <input
+                          type="password"
+                          name="password"
+                          value={form.password}
+                          onChange={handleChange}
+                          placeholder="금융기관 로그인 비밀번호"
+                          className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                        />
+                      </div>
+                    </>
+                  )}
 
                   {/* 안내 박스 */}
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">

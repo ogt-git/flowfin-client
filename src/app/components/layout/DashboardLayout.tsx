@@ -31,7 +31,7 @@ export default function DashboardLayout({ userName, onLogout }: DashboardLayoutP
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 flex h-screen w-64 flex-col border-r border-border bg-white z-20">
-        <div className="border-b border-border px-6 py-6">
+        <div className="border-b border-border px-6 py-6 cursor-pointer" onClick={() => navigate('/dashboard')}>
           <h2 className="text-2xl" style={{ fontFamily: 'var(--font-family-display)' }}>
             💰 FlowFin
           </h2>
@@ -80,11 +80,14 @@ export default function DashboardLayout({ userName, onLogout }: DashboardLayoutP
                 <Bell className="h-5 w-5 text-muted-foreground" />
                 <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-[#10B981]" />
               </button>
-              <div className="ml-2 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#0A3D5C] to-[#10B981] text-white shadow-md">
+              <button
+                onClick={() => navigate('/mypage')}
+                className="ml-2 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#0A3D5C] to-[#10B981] text-white shadow-md transition-opacity hover:opacity-80"
+              >
                 <span style={{ fontFamily: 'var(--font-family-display)' }}>
                   {userName.charAt(0) || 'U'}
                 </span>
-              </div>
+              </button>
             </div>
           </div>
         </header>

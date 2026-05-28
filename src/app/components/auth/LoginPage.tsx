@@ -70,6 +70,7 @@ export default function LoginPage({ onNavigateToSignup, onLoginSuccess }: {
                             type="password"
                             value={form.password}
                             onChange={e => setForm({ ...form, password: e.target.value })}
+                            onKeyDown={e => e.key === 'Enter' && handleLogin()}
                             placeholder="••••••••"
                             className="w-full rounded-xl border border-border bg-input-background px-4 py-3 outline-none focus:border-primary"
                         />
