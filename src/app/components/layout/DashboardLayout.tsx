@@ -8,7 +8,7 @@ interface DashboardLayoutProps {
 
 const navItems = [
   { icon: Home,        label: '홈',          path: '/dashboard' },
-  { icon: PlusCircle,  label: '카드 등록',    path: '/card/link' },
+  { icon: PlusCircle,  label: '카드 연동',    path: '/card/link' },
   { icon: PieChart,    label: '지출 분석',    path: '/expenses' },
   { icon: TrendingUp,  label: '자산 연동',    path: '/asset/link' },
   { icon: BarChart2,   label: '증권 현황',    path: '/stocks' },
