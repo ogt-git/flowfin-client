@@ -1,9 +1,11 @@
-import { useState, useRef, type ChangeEvent, type FormEvent } from 'react';
+import { useState, useRef, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { Loader2, CreditCard, ChevronRight, FolderOpen } from 'lucide-react';
 import { connectAccount } from '../../api/codef';
 import { CardVisual } from '../components/CardVisual';
+import { CodefErrorModal } from '../components/codef/CodefErrorModal';
+import { resolveCodefError, type CodefModalInputUx } from '../../constants/codefErrors';
 import { CARD_ORGANIZATIONS } from '../../types/card';
 import type { LoginType } from '../../types/card';
 import type { CodefConnectRequest } from '../../types/codef';
@@ -13,6 +15,8 @@ interface CardLinkForm {
   loginType: LoginType;
   id: string;
   password: string;
+  accountNumber: string;
+  accountPassword: string;
 }
 
 const EMPTY_FORM: CardLinkForm = {
@@ -20,7 +24,15 @@ const EMPTY_FORM: CardLinkForm = {
   loginType: '1',
   id: '',
   password: '',
+  accountNumber: '',
+  accountPassword: '',
 };
+
+const HYUNDAI_CODE = '0302';
+
+function formatCardNumber(raw: string): string {
+  return raw.replace(/(\d{4})(?=\d)/g, '$1-');
+}
 
 export default function CardLink() {
   const navigate = useNavigate();
@@ -28,9 +40,13 @@ export default function CardLink() {
   const [derFile, setDerFile] = useState<File | null>(null);
   const [keyFile, setKeyFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorModal, setErrorModal] = useState<CodefModalInputUx | null>(null);
   const folderRef = useRef<HTMLInputElement>(null);
 
   const selectedCard = CARD_ORGANIZATIONS.find((c) => c.code === form.organization);
+  const isHyundaiIdPw = form.organization === HYUNDAI_CODE && form.loginType === '1';
+  const hyundaiFieldsValid =
+    !isHyundaiIdPw || (form.accountNumber.length === 16 && form.accountPassword.length === 4);
 
   function handleFolderSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -42,23 +58,80 @@ export default function CardLink() {
   }
 
   function handleOrg(code: string) {
-    setForm((prev) => ({ ...prev, organization: code }));
+    setForm((prev) => ({ ...prev, organization: code, accountNumber: '', accountPassword: '' }));
   }
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
+
     if (name === 'loginType') {
-      setForm((prev) => ({ ...prev, loginType: value as LoginType, id: '', password: '' }));
+      setForm((prev) => ({
+        ...prev,
+        loginType: value as LoginType,
+        id: '',
+        password: '',
+        accountNumber: '',
+        accountPassword: '',
+      }));
       setDerFile(null);
       setKeyFile(null);
       return;
     }
+
+    if (name === 'accountNumber') {
+      const digits = value.replace(/\D/g, '').slice(0, 16);
+      setForm((prev) => ({ ...prev, accountNumber: digits }));
+      return;
+    }
+
+    if (name === 'accountPassword') {
+      const digits = value.replace(/\D/g, '').slice(0, 4);
+      setForm((prev) => ({ ...prev, accountPassword: digits }));
+      return;
+    }
+
     setForm((prev) => ({ ...prev, [name]: value }) as CardLinkForm);
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  function buildPayload(extra?: { cardNumber: string; cardPassword: string }): CodefConnectRequest {
+    return {
+      organization: form.organization,
+      businessType: 'CD',
+      loginType: form.loginType,
+      id: form.id,
+      password: form.password,
+      accountNumber: extra?.cardNumber ?? (form.accountNumber || undefined),
+      accountPassword: extra?.cardPassword ?? (form.accountPassword || undefined),
+      ...(form.loginType === '0' && { derFile: derFile!, keyFile: keyFile! }),
+    };
+  }
 
+  function handleCodefError(err: unknown) {
+    const axiosErr = err as { response?: { data?: { message?: string; errorCode?: string }; status?: number } };
+    const serverData = axiosErr.response?.data;
+    const status = axiosErr.response?.status;
+    const errorCode = serverData?.errorCode;
+
+    if (errorCode) {
+      const ux = resolveCodefError(errorCode);
+      if (ux.type === 'MODAL_INPUT') {
+        setErrorModal(ux as CodefModalInputUx);
+        return;
+      }
+      toast.error(ux.message);
+      return;
+    }
+
+    if (status === 409) {
+      toast.error(serverData?.message ?? '이미 연동된 카드사입니다. 마이페이지에서 해제 후 다시 시도해주세요.');
+    } else if (serverData?.message) {
+      toast.error(serverData.message);
+    } else {
+      toast.error('카드 연동에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  }
+
+  async function handleSubmit() {
     if (!form.organization) {
       toast.error('카드사를 선택해주세요.');
       return;
@@ -72,32 +145,33 @@ export default function CardLink() {
         toast.error('아이디와 비밀번호를 입력해주세요.');
         return;
       }
+      if (isHyundaiIdPw && !hyundaiFieldsValid) {
+        toast.error('카드번호 16자리와 카드 비밀번호 4자리를 입력해주세요.');
+        return;
+      }
     }
 
     setLoading(true);
     try {
-      const payload: CodefConnectRequest = {
-        organization: form.organization,
-        businessType: 'CD',
-        loginType: form.loginType,
-        id: form.id,
-        password: form.password,
-        ...(form.loginType === '0' && { derFile: derFile!, keyFile: keyFile! }),
-      };
-      await connectAccount(payload);
+      await connectAccount(buildPayload());
       toast.success('카드 연동이 완료되었습니다. 잠시 후 지출내역 페이지로 이동합니다.');
       setTimeout(() => navigate('/expenses'), 12000);
-    } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: string }; status?: number } };
-      const serverMsg = axiosErr.response?.data?.message;
-      const status = axiosErr.response?.status;
-      if (status === 409) {
-        toast.error(serverMsg ?? '이미 연동된 카드사입니다. 마이페이지에서 해제 후 다시 시도해주세요.');
-      } else if (serverMsg) {
-        toast.error(serverMsg);
-      } else {
-        toast.error('카드 연동에 실패했습니다. 잠시 후 다시 시도해주세요.');
-      }
+    } catch (err) {
+      handleCodefError(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRetry(values: { cardNumber: string; cardPassword: string }) {
+    setErrorModal(null);
+    setLoading(true);
+    try {
+      await connectAccount(buildPayload(values));
+      toast.success('카드 연동이 완료되었습니다. 잠시 후 지출내역 페이지로 이동합니다.');
+      setTimeout(() => navigate('/expenses'), 12000);
+    } catch (err) {
+      handleCodefError(err);
     } finally {
       setLoading(false);
     }
@@ -109,177 +183,210 @@ export default function CardLink() {
         <CreditCard className="h-5 w-5 text-[#0A3D5C]" />
         <h2 className="text-xl font-medium">카드 연동</h2>
       </div>
-      <form onSubmit={handleSubmit}>
-              <div className="grid gap-8 lg:grid-cols-2">
-                {/* 좌측 — 카드사 선택 + 미리보기 */}
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="mb-4 text-base font-medium text-foreground">카드사 선택</h3>
-                    <div className="grid grid-cols-2 gap-2">
-                      {CARD_ORGANIZATIONS.map((org) => (
-                          <button
-                              key={org.code}
-                              type="button"
-                              onClick={() => handleOrg(org.code)}
-                              className={`rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
-                                  form.organization === org.code
-                                      ? 'border-[#0A3D5C] bg-[#0A3D5C] text-white shadow-md'
-                                      : 'border-border bg-white text-foreground hover:border-[#0A3D5C]/40 hover:bg-secondary'
-                              }`}
-                          >
-                            {org.name}
-                          </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* 카드 비주얼 */}
-                  <div className="flex justify-center pt-2">
-                    <CardVisual
-                        organizationName={selectedCard?.name ?? '카드사 미선택'}
-                        organizationColor={selectedCard?.color ?? '#CBD5E1'}
-                    />
-                  </div>
-                </div>
+      <div className="grid gap-8 lg:grid-cols-2">
+        {/* 좌측 — 카드사 선택 + 미리보기 */}
+        <div className="space-y-6">
+          <div>
+            <h3 className="mb-4 text-base font-medium text-foreground">카드사 선택</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {CARD_ORGANIZATIONS.map((org) => (
+                <button
+                  key={org.code}
+                  onClick={() => handleOrg(org.code)}
+                  className={`rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
+                    form.organization === org.code
+                      ? 'border-[#0A3D5C] bg-[#0A3D5C] text-white shadow-md'
+                      : 'border-border bg-white text-foreground hover:border-[#0A3D5C]/40 hover:bg-secondary'
+                  }`}
+                >
+                  {org.name}
+                </button>
+              ))}
+            </div>
+          </div>
 
-                {/* 우측 — 입력 폼 */}
-                <div className="space-y-6">
-                  {/* loginType */}
-                  <div>
-                    <label className="mb-3 block text-sm font-medium text-foreground">
-                      로그인 방식
-                    </label>
-                    <div className="flex gap-4">
-                      {(
-                          [
-                            { value: '0', label: '공인인증서' },
-                            { value: '1', label: '아이디/비밀번호' },
-                          ] as { value: LoginType; label: string }[]
-                      ).map((opt) => (
-                          <label
-                              key={opt.value}
-                              className="flex cursor-pointer items-center gap-2 text-sm"
-                          >
-                            <input
-                                type="radio"
-                                name="loginType"
-                                value={opt.value}
-                                checked={form.loginType === opt.value}
-                                onChange={handleChange}
-                                className="accent-[#0A3D5C]"
-                            />
-                            {opt.label}
-                          </label>
-                      ))}
-                    </div>
-                  </div>
+          <div className="flex justify-center pt-2">
+            <CardVisual
+              organizationName={selectedCard?.name ?? '카드사 미선택'}
+              organizationColor={selectedCard?.color ?? '#CBD5E1'}
+            />
+          </div>
+        </div>
 
-                  {form.loginType === '0' ? (
-                    <>
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-foreground">공인인증서 폴더</label>
-                        <input
-                          ref={folderRef}
-                          type="file"
-                          className="hidden"
-                          multiple
-                          {...{ webkitdirectory: '' }}
-                          onChange={handleFolderSelect}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => folderRef.current?.click()}
-                          className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${
-                            derFile && keyFile ? 'border-[#0A3D5C] bg-[#0A3D5C]/5 text-[#0A3D5C]' : 'border-border bg-input-background text-muted-foreground hover:border-[#0A3D5C]/40'
-                          }`}
-                        >
-                          <FolderOpen className="h-4 w-4 shrink-0" />
-                          <span>{derFile && keyFile ? '인증서 확인됨' : '인증서 폴더 선택'}</span>
-                        </button>
-                        {(derFile || keyFile) && (
-                          <div className="mt-2 space-y-1 text-xs">
-                            <p className={derFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{derFile ? `✓ ${derFile.name}` : '✗ .der 파일 없음'}</p>
-                            <p className={keyFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{keyFile ? `✓ ${keyFile.name}` : '✗ .key 파일 없음'}</p>
-                          </div>
-                        )}
-                        <div className="mt-2 rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-                          <p className="font-medium text-foreground">인증서 위치 안내</p>
-                          <p>Windows: <span className="font-mono">C:\Users\사용자명\AppData\LocalLow\NPKI</span></p>
-                          <p>Windows (공용): <span className="font-mono">C:\NPKI</span></p>
-                          <p>Mac: <span className="font-mono">~/Library/Preferences/NPKI</span></p>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-foreground">인증서 비밀번호</label>
-                        <input
-                          type="password"
-                          name="password"
-                          value={form.password}
-                          onChange={handleChange}
-                          placeholder="공인인증서 비밀번호"
-                          className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-foreground">아이디</label>
-                        <input
-                          type="text"
-                          name="id"
-                          value={form.id}
-                          onChange={handleChange}
-                          placeholder="금융기관 로그인 아이디"
-                          className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-sm font-medium text-foreground">비밀번호</label>
-                        <input
-                          type="password"
-                          name="password"
-                          value={form.password}
-                          onChange={handleChange}
-                          placeholder="금융기관 로그인 비밀번호"
-                          className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-                        />
-                      </div>
-                    </>
-                  )}
+        {/* 우측 — 입력 폼 */}
+        <div className="space-y-6">
+          {/* 로그인 방식 */}
+          <div>
+            <label className="mb-3 block text-sm font-medium text-foreground">로그인 방식</label>
+            <div className="flex gap-4">
+              {(
+                [
+                  { value: '0', label: '공인인증서' },
+                  { value: '1', label: '아이디/비밀번호' },
+                ] as { value: LoginType; label: string }[]
+              ).map((opt) => (
+                <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="loginType"
+                    value={opt.value}
+                    checked={form.loginType === opt.value}
+                    onChange={handleChange}
+                    className="accent-[#0A3D5C]"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
 
-                  {/* 안내 박스 */}
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-                    비밀번호는 HTTPS 암호화 채널로 전송되며 서버에 저장되지 않습니다.
+          {form.loginType === '0' ? (
+            <>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-foreground">공인인증서 폴더</label>
+                <input
+                  ref={folderRef}
+                  type="file"
+                  className="hidden"
+                  multiple
+                  {...{ webkitdirectory: '' }}
+                  onChange={handleFolderSelect}
+                />
+                <button
+                  onClick={() => folderRef.current?.click()}
+                  className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${
+                    derFile && keyFile
+                      ? 'border-[#0A3D5C] bg-[#0A3D5C]/5 text-[#0A3D5C]'
+                      : 'border-border bg-input-background text-muted-foreground hover:border-[#0A3D5C]/40'
+                  }`}
+                >
+                  <FolderOpen className="h-4 w-4 shrink-0" />
+                  <span>{derFile && keyFile ? '인증서 확인됨' : '인증서 폴더 선택'}</span>
+                </button>
+                {(derFile || keyFile) && (
+                  <div className="mt-2 space-y-1 text-xs">
+                    <p className={derFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{derFile ? `✓ ${derFile.name}` : '✗ .der 파일 없음'}</p>
+                    <p className={keyFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{keyFile ? `✓ ${keyFile.name}` : '✗ .key 파일 없음'}</p>
                   </div>
-
-                  {/* 버튼 */}
-                  <div className="flex gap-3 pt-2">
-                    <button
-                        type="button"
-                        onClick={() => navigate(-1)}
-                        className="flex-1 rounded-xl border border-border bg-white py-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
-                    >
-                      취소
-                    </button>
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
-                    >
-                      {loading ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                          <>
-                            카드 연동하기
-                            <ChevronRight className="h-4 w-4" />
-                          </>
-                      )}
-                    </button>
-                  </div>
+                )}
+                <div className="mt-2 rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                  <p className="font-medium text-foreground">인증서 위치 안내</p>
+                  <p>Windows: <span className="font-mono">C:\Users\사용자명\AppData\LocalLow\NPKI</span></p>
+                  <p>Windows (공용): <span className="font-mono">C:\NPKI</span></p>
+                  <p>Mac: <span className="font-mono">~/Library/Preferences/NPKI</span></p>
                 </div>
               </div>
-      </form>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-foreground">인증서 비밀번호</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="공인인증서 비밀번호"
+                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-foreground">아이디</label>
+                <input
+                  type="text"
+                  name="id"
+                  value={form.id}
+                  onChange={handleChange}
+                  placeholder="금융기관 로그인 아이디"
+                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-foreground">비밀번호</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleChange}
+                  placeholder="금융기관 로그인 비밀번호"
+                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                />
+              </div>
+
+              {/* 현대카드 추가 필드 */}
+              {isHyundaiIdPw && (
+                <>
+                  <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-800">
+                    현대카드 아이디 로그인에는 카드번호(16자리)와 카드 비밀번호 4자리가 추가로 필요합니다.
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">카드번호 (16자리)</label>
+                    <input
+                      type="text"
+                      name="accountNumber"
+                      inputMode="numeric"
+                      value={formatCardNumber(form.accountNumber)}
+                      onChange={handleChange}
+                      placeholder="0000-0000-0000-0000"
+                      maxLength={19}
+                      className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-foreground">카드 비밀번호 (4자리)</label>
+                    <input
+                      type="password"
+                      name="accountPassword"
+                      inputMode="numeric"
+                      value={form.accountPassword}
+                      onChange={handleChange}
+                      placeholder="카드 비밀번호 4자리"
+                      maxLength={4}
+                      className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    />
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+            비밀번호는 HTTPS 암호화 채널로 전송되며 서버에 저장되지 않습니다.
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex-1 rounded-xl border border-border bg-white py-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+            >
+              취소
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !hyundaiFieldsValid}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  카드 연동하기
+                  <ChevronRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {errorModal && (
+        <CodefErrorModal
+          ux={errorModal}
+          onClose={() => setErrorModal(null)}
+          onRetry={handleRetry}
+        />
+      )}
     </div>
   );
 }
