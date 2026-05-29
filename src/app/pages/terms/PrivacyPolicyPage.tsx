@@ -50,8 +50,8 @@ export function PrivacyPolicyPage() {
       <section className="mb-4">
         <h3 className="mb-1 font-semibold">6. 개인정보 보호책임자</h3>
         <ul className="ml-4 list-disc space-y-1">
-          <li>성명: [담당자명]</li>
-          <li>연락처: [이메일 주소]</li>
+          <li>성명: 오경택</li>
+          <li>연락처: rudxor9@skuniv.ac.kr</li>
         </ul>
       </section>
 

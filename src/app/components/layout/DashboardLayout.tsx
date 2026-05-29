@@ -11,7 +11,7 @@ const navItems = [
   { icon: PlusCircle,  label: '카드 연동',    path: '/card/link' },
   { icon: PieChart,    label: '지출 분석',    path: '/expenses' },
   { icon: TrendingUp,  label: '자산 연동',    path: '/asset/link' },
-  { icon: BarChart2,   label: '증권 현황',    path: '/stocks' },
+  { icon: BarChart2,   label: '증권 자산 현황',    path: '/stocks' },
   { icon: LayoutGrid,  label: 'AI 포트폴리오', path: '/portfolio/link' },
   { icon: Users,       label: '커뮤니티',     path: '/community' },
   { icon: User,        label: '마이페이지',   path: '/mypage' },
