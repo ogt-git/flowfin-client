@@ -297,7 +297,12 @@ export default function TendencyTestPage({ onComplete }: { onComplete: (riskType
               </button>
 
               <button
-                onClick={handleBack}
+                onClick={() => {
+                  setAnswers(new Array(QUESTIONS.length).fill(-1));
+                  setCurrentQ(0);
+                  setDirection(-1);
+                  setStep('test');
+                }}
                 className="mt-3 w-full text-center text-sm text-muted-foreground hover:text-foreground"
               >
                 ← 다시 테스트하기
