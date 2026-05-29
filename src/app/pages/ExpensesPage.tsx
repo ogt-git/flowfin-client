@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
 import { fetchExpenses, updateExpenseCategory, deleteExpense, fetchMonthlyStats } from '../../api/expenses';
@@ -111,6 +111,7 @@ export default function ExpensesPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading]         = useState(false);
+  const [refreshing, setRefreshing]   = useState(false);
   const [editingId, setEditingId]     = useState<number | null>(null);
   const [editCategoryId, setEditCategoryId] = useState(0);
   const [saving, setSaving]           = useState(false);
@@ -136,6 +137,12 @@ export default function ExpensesPage() {
       setLoading(false);
     }
   }, [month, filterType, page]);
+
+  async function reload() {
+    setRefreshing(true);
+    await Promise.all([loadExpenses(), fetchMonthlyStats(month).then(setStats).catch(() => {})]);
+    setRefreshing(false);
+  }
 
   useEffect(() => { setPage(0); }, [month, filterType]);
   useEffect(() => { loadExpenses(); }, [loadExpenses]);
@@ -217,6 +224,14 @@ export default function ExpensesPage() {
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-semibold">지출 내역</h2>
         <div className="flex items-center gap-2">
+          <button
+            onClick={reload}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-sm text-muted-foreground hover:bg-secondary disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            새로고침
+          </button>
           <button
             onClick={() => setMonth((m) => shiftMonth(m, -1))}
             className="rounded-lg p-2 hover:bg-secondary"
@@ -310,8 +325,10 @@ export default function ExpensesPage() {
                       </span>
                     )}
 
-                    <p className="w-28 text-right font-medium">
-                      -{expense.amount.toLocaleString('ko-KR')}원
+                    <p className={`w-28 text-right font-medium ${expense.amount < 0 ? 'text-green-500' : ''}`}>
+                      {expense.amount < 0
+                        ? `+${Math.abs(expense.amount).toLocaleString('ko-KR')}원`
+                        : `-${expense.amount.toLocaleString('ko-KR')}원`}
                     </p>
 
                     {editingId !== expense.expenseId && (

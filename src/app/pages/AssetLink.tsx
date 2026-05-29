@@ -9,7 +9,7 @@ import type { LoginType } from '../../types/card';
 import type { CodefConnectRequest } from '../../types/codef';
 
 type MainTab = 'stock' | 'manual';
-type ManualSubTab = 'savings' | 'realestate' | 'other';
+type ManualSubTab = 'deposit' | 'savings' | 'realestate' | 'cash' | 'pension' | 'other';
 
 interface ApiLinkForm {
   organization: string;
@@ -45,10 +45,13 @@ const EMPTY_MANUAL_FORM: ManualAssetForm = {
   memo: '',
 };
 
-const MANUAL_SUB_TABS: { key: ManualSubTab; label: string; placeholder: string; productType: string }[] = [
-  { key: 'savings',    label: '💰 예·적금', placeholder: '예) KB 정기적금',        productType: '예적금' },
-  { key: 'realestate', label: '🏠 부동산',  placeholder: '예) 서울 강남구 아파트', productType: '부동산' },
-  { key: 'other',      label: '🚗 기타',    placeholder: '예) 자동차, 골드바',     productType: '기타'   },
+const MANUAL_SUB_TABS: { key: ManualSubTab; label: string; placeholder: string; assetType: string }[] = [
+  { key: 'deposit',    label: '🏦 예금',    placeholder: '예) 국민은행 정기예금',   assetType: 'DEPOSIT'     },
+  { key: 'savings',    label: '💰 적금',    placeholder: '예) KB 정기적금',        assetType: 'SAVINGS'     },
+  { key: 'realestate', label: '🏠 부동산',  placeholder: '예) 서울 강남구 아파트', assetType: 'REAL_ESTATE' },
+  { key: 'cash',       label: '💵 현금',    placeholder: '예) 달러, 엔화',         assetType: 'CASH'        },
+  { key: 'pension',    label: '🧓 연금',    placeholder: '예) IRP, 연금저축펀드',  assetType: 'PENSION'     },
+  { key: 'other',      label: '🚗 기타',    placeholder: '예) 자동차, 골드바',     assetType: 'ETC'         },
 ];
 
 export default function AssetLink() {
@@ -126,8 +129,17 @@ export default function AssetLink() {
       await connectAccount(payload);
       toast.success('자산 연동이 완료되었습니다. 데이터는 약 10초 후 자동으로 불러와집니다.');
       navigate('/stocks');
-    } catch {
-      toast.error('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string }; status?: number } };
+      const serverMsg = axiosErr.response?.data?.message;
+      const status = axiosErr.response?.status;
+      if (status === 409) {
+        toast.error(serverMsg ?? '이미 연동된 증권사입니다. 마이페이지에서 해제 후 다시 시도해주세요.');
+      } else if (serverMsg) {
+        toast.error(serverMsg);
+      } else {
+        toast.error('자산 연동에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      }
     } finally {
       setLoading(false);
     }
@@ -145,14 +157,18 @@ export default function AssetLink() {
     setLoading(true);
     try {
       await createManualAsset({
-        productType: subTab.productType,
+        assetType: subTab.assetType,
         itemName: manualForm.assetName.trim(),
         purchaseAmount: Number(manualForm.purchasePrice),
         valuationAmt: Number(manualForm.currentPrice),
+        ...(manualForm.purchaseDate && { purchaseDate: manualForm.purchaseDate }),
+        ...(manualForm.memo.trim() && { memo: manualForm.memo.trim() }),
       });
       toast.success('자산이 등록되었습니다.');
       navigate('/stocks');
-    } catch {
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: unknown; status?: number } };
+      console.error('[manual asset error]', axiosErr.response?.status, axiosErr.response?.data);
       toast.error('자산 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       setLoading(false);

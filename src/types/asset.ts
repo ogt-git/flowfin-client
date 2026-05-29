@@ -1,7 +1,4 @@
-export interface AssetItem {
-  id: number;
-  accountId: number;
-  productType: string;
+export interface StockItem {
   itemName: string;
   itemCode: string;
   quantity: number;
@@ -9,23 +6,34 @@ export interface AssetItem {
   valuationAmt: number;
   valuationPl: number;
   earningsRate: number;
-  updatedAt: string;
 }
 
-export interface AssetAccount {
-  id: number;
+export interface StockAccount {
   brokerCode: string;
   accountNo: string;
   totalAsset: number;
   depositReceived: number;
-  updatedAt: string;
+  items: StockItem[];
 }
 
-export interface AssetSummary {
-  totalAsset: number;
-  totalPurchaseAmount: number;
-  totalValuationPl: number;
-  totalEarningsRate: number;
-  accounts: AssetAccount[];
-  items: AssetItem[];
+export interface AssetSummaryData {
+  totalStockAsset: number;
+  depositReceived: number;
+  liquidManualAsset: number;
+  totalManualAsset: number;
+  investableAmount: number;
+  fixedMonthlyAvg: number;
+  emergencyFund: number;
+}
+
+export interface ManualAssetItem {
+  id: number;
+  assetType: string;
+  itemName: string;
+  purchaseAmount: number;
+  valuationAmt: number;
+  purchaseDate: string | null;
+  memo: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
