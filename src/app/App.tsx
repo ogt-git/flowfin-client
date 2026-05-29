@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router';
+import { Routes, Route, Navigate, useNavigate } from 'react-router';
 import LoginPage from './components/auth/LoginPage';
 import SignupPage from './components/auth/SignupPage';
 import TendencyTestPage from './components/auth/TendencyTestPage';
@@ -23,10 +23,20 @@ import { login, type RiskType } from '../api/auth';
 type AuthPage = 'login' | 'signup';
 
 export default function App() {
-  const [authPage, setAuthPage] = useState<AuthPage>('login');
+  const navigate = useNavigate();
+  const [authPage, setAuthPage] = useState<AuthPage>(
+    () => (sessionStorage.getItem('authPage') as AuthPage) ?? 'login',
+  );
+
+  const setAuthPagePersisted = (page: AuthPage) => {
+    sessionStorage.setItem('authPage', page);
+    setAuthPage(page);
+  };
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token'));
   const [userName, setUserName] = useState(() => localStorage.getItem('name') || '');
-  const [needsTendencyTest, setNeedsTendencyTest] = useState(false);
+  const [needsTendencyTest, setNeedsTendencyTest] = useState(
+    () => !!localStorage.getItem('token') && !localStorage.getItem('riskType'),
+  );
 
   const applyLoginData = (data: { accessToken: string; name: string; userId: number; email: string; riskType: string | null }) => {
     localStorage.setItem('token', data.accessToken);
@@ -34,12 +44,14 @@ export default function App() {
     localStorage.setItem('userId', String(data.userId));
     localStorage.setItem('email', data.email);
     localStorage.setItem('riskType', data.riskType ?? '');
+    sessionStorage.removeItem('authPage');
     setUserName(data.name);
     setIsLoggedIn(true);
   };
 
   const handleLoginSuccess = (data: { accessToken: string; name: string; userId: number; email: string; riskType: string | null }) => {
     applyLoginData(data);
+    navigate('/dashboard', { replace: true });
   };
 
   const handleSignupSuccess = async (email: string, password: string) => {
@@ -62,20 +74,21 @@ export default function App() {
     setIsLoggedIn(false);
     setUserName('');
     setNeedsTendencyTest(false);
+    setAuthPagePersisted('login');
   };
 
   if (!isLoggedIn) {
     if (authPage === 'signup') {
       return (
         <SignupPage
-          onNavigateToLogin={() => setAuthPage('login')}
+          onNavigateToLogin={() => setAuthPagePersisted('login')}
           onSignupSuccess={handleSignupSuccess}
         />
       );
     }
     return (
       <LoginPage
-        onNavigateToSignup={() => setAuthPage('signup')}
+        onNavigateToSignup={() => setAuthPagePersisted('signup')}
         onLoginSuccess={handleLoginSuccess}
       />
     );

@@ -177,6 +177,7 @@ export default function SignupPage({
               value={form.name}
               onChange={e => handleChange('name', e.target.value)}
               onBlur={() => handleBlur('name')}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
               placeholder="홍길동"
               maxLength={10}
               className={inputClass('name')}
@@ -193,6 +194,7 @@ export default function SignupPage({
               value={form.email}
               onChange={e => handleChange('email', e.target.value)}
               onBlur={() => handleBlur('email')}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
               placeholder="example@email.com"
               maxLength={50}
               className={inputClass('email')}
@@ -209,6 +211,7 @@ export default function SignupPage({
               value={form.password}
               onChange={e => handleChange('password', e.target.value)}
               onBlur={() => handleBlur('password')}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
               placeholder="영문+숫자+특수문자 8~20자"
               maxLength={20}
               className={inputClass('password')}
