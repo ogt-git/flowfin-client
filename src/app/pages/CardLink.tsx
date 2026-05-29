@@ -87,8 +87,17 @@ export default function CardLink() {
       await connectAccount(payload);
       toast.success('카드 연동이 완료되었습니다. 잠시 후 지출내역 페이지로 이동합니다.');
       setTimeout(() => navigate('/expenses'), 12000);
-    } catch {
-      toast.error('서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string }; status?: number } };
+      const serverMsg = axiosErr.response?.data?.message;
+      const status = axiosErr.response?.status;
+      if (status === 409) {
+        toast.error(serverMsg ?? '이미 연동된 카드사입니다. 마이페이지에서 해제 후 다시 시도해주세요.');
+      } else if (serverMsg) {
+        toast.error(serverMsg);
+      } else {
+        toast.error('카드 연동에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      }
     } finally {
       setLoading(false);
     }
