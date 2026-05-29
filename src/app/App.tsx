@@ -14,6 +14,9 @@ import StockDashboardPage from './pages/StockDashboardPage';
 import ExpensesPage from './pages/ExpensesPage';
 import PortfolioPage from './pages/PortfolioPage';
 import MyPage from './pages/MyPage';
+import { ServiceTermsPage } from './pages/terms/ServiceTermsPage';
+import { PrivacyPolicyPage } from './pages/terms/PrivacyPolicyPage';
+import { ThirdPartyConsentPage } from './pages/terms/ThirdPartyConsentPage';
 import { Toaster } from './components/ui/sonner';
 import { login, type RiskType } from '../api/auth';
 
@@ -99,6 +102,9 @@ export default function App() {
           <Route path="/stocks" element={<StockDashboardPage />} />
           <Route path="/portfolio/link" element={<PortfolioPage />} />
           <Route path="/mypage" element={<MyPage onLogout={handleLogout} />} />
+          <Route path="/terms/service" element={<div className="p-6 max-w-2xl mx-auto"><ServiceTermsPage /></div>} />
+          <Route path="/terms/privacy" element={<div className="p-6 max-w-2xl mx-auto"><PrivacyPolicyPage /></div>} />
+          <Route path="/terms/third-party" element={<div className="p-6 max-w-2xl mx-auto"><ThirdPartyConsentPage /></div>} />
         </Route>
       </Routes>
     </>
