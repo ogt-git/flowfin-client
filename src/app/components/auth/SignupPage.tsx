@@ -1,6 +1,11 @@
 import { useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
 import { signup } from '../../../api/auth';
+import { TermsModal } from '../common/TermsModal';
+import { ServiceTermsPage } from '../../pages/terms/ServiceTermsPage';
+import { PrivacyPolicyPage } from '../../pages/terms/PrivacyPolicyPage';
+import { ThirdPartyConsentPage } from '../../pages/terms/ThirdPartyConsentPage';
 
 interface FormState {
   name: string;
@@ -15,6 +20,20 @@ interface FieldErrors {
   password?: string;
   passwordConfirm?: string;
 }
+
+type TermsKey = 'service' | 'privacy' | 'thirdParty';
+
+interface TermsState {
+  service: boolean;
+  privacy: boolean;
+  thirdParty: boolean;
+}
+
+const TERMS_META: Record<TermsKey, { label: string; title: string; Component: () => React.ReactElement }> = {
+  service: { label: '서비스 이용약관 동의', title: '서비스 이용약관', Component: ServiceTermsPage },
+  privacy: { label: '개인정보 수집 및 이용 동의', title: '개인정보 수집 및 이용 동의', Component: PrivacyPolicyPage },
+  thirdParty: { label: '개인정보 제3자 제공 동의', title: '개인정보 제3자 제공 동의', Component: ThirdPartyConsentPage },
+};
 
 function validateName(name: string): string | undefined {
   if (!name) return '이름을 입력해주세요.';
@@ -66,6 +85,20 @@ export default function SignupPage({
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [terms, setTerms] = useState<TermsState>({ service: false, privacy: false, thirdParty: false });
+  const [openModal, setOpenModal] = useState<TermsKey | null>(null);
+
+  const allChecked = terms.service && terms.privacy && terms.thirdParty;
+
+  const handleAllChange = () => {
+    const next = !allChecked;
+    setTerms({ service: next, privacy: next, thirdParty: next });
+  };
+
+  const handleTermChange = (key: TermsKey) => {
+    setTerms(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const validate = (field: keyof FormState, value: string): string | undefined => {
     switch (field) {
       case 'name': return validateName(value);
@@ -102,11 +135,12 @@ export default function SignupPage({
     setErrors(newErrors);
 
     if (Object.values(newErrors).some(Boolean)) return;
+    if (!allChecked) return;
 
     setLoading(true);
     setSubmitError('');
     try {
-      await signup({ name: form.name, email: form.email, password: form.password });
+      await signup({ name: form.name, email: form.email, password: form.password, termsVersion: '1.0' });
       await onSignupSuccess(form.email, form.password);
     } catch (e: any) {
       const msg = e?.response?.data?.message ?? e?.message ?? '회원가입에 실패했습니다.';
@@ -120,6 +154,8 @@ export default function SignupPage({
     `w-full rounded-xl border bg-input-background px-4 py-3 outline-none transition-colors focus:border-primary ${
       touched[field] && errors[field] ? 'border-destructive' : 'border-border'
     }`;
+
+  const activeModal = openModal ? TERMS_META[openModal] : null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -202,11 +238,53 @@ export default function SignupPage({
             )}
           </div>
 
+          {/* 약관 동의 영역 */}
+          <div className="rounded-xl border border-border p-4">
+            {/* 전체 동의 */}
+            <div className="mb-3 border-b border-border pb-3">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={allChecked}
+                  onChange={handleAllChange}
+                  className="h-4 w-4 rounded accent-primary"
+                />
+                <span className="font-semibold text-sm">전체 동의</span>
+              </label>
+            </div>
+
+            {/* 개별 항목 */}
+            <div className="flex flex-col gap-2">
+              {(Object.keys(TERMS_META) as TermsKey[]).map(key => (
+                <div key={key} className="flex items-center justify-between">
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={terms[key]}
+                      onChange={() => handleTermChange(key)}
+                      className="h-4 w-4 rounded accent-primary"
+                    />
+                    <span className="text-sm">
+                      <span className="text-destructive font-medium">[필수]</span>{' '}
+                      {TERMS_META[key].label}
+                    </span>
+                  </label>
+                  <button
+                    onClick={() => setOpenModal(key)}
+                    className="ml-2 shrink-0 text-xs text-muted-foreground hover:text-primary hover:underline"
+                  >
+                    보기 &gt;
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {submitError && <p className="text-sm text-destructive">{submitError}</p>}
 
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || !allChecked}
             className="mt-2 w-full rounded-xl bg-primary py-3 text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {loading ? '가입 중...' : '가입하기'}
@@ -220,6 +298,12 @@ export default function SignupPage({
           </p>
         </div>
       </motion.div>
+
+      {activeModal && (
+        <TermsModal title={activeModal.title} onClose={() => setOpenModal(null)}>
+          <activeModal.Component />
+        </TermsModal>
+      )}
     </div>
   );
 }
