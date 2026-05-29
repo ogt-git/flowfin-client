@@ -148,20 +148,25 @@ export default function AssetLink() {
   async function handleManualSubmit(e: FormEvent) {
     e.preventDefault();
     if (!manualForm.assetName.trim()) { toast.error('자산명을 입력해주세요.'); return; }
-    if (!manualForm.purchasePrice || !manualForm.currentPrice) {
-      toast.error('취득가액과 현재가액을 입력해주세요.');
-      return;
+    if (manualSubTab === 'cash') {
+      if (!manualForm.currentPrice) { toast.error('현재가액을 입력해주세요.'); return; }
+    } else {
+      if (!manualForm.purchasePrice || !manualForm.currentPrice) {
+        toast.error('취득가액과 현재가액을 입력해주세요.');
+        return;
+      }
     }
 
     const subTab = MANUAL_SUB_TABS.find((s) => s.key === manualSubTab)!;
+    const currentPrice = Number(manualForm.currentPrice);
     setLoading(true);
     try {
       await createManualAsset({
         assetType: subTab.assetType,
         itemName: manualForm.assetName.trim(),
-        purchaseAmount: Number(manualForm.purchasePrice),
-        valuationAmt: Number(manualForm.currentPrice),
-        ...(manualForm.purchaseDate && { purchaseDate: manualForm.purchaseDate }),
+        purchaseAmount: manualSubTab === 'cash' ? currentPrice : Number(manualForm.purchasePrice),
+        valuationAmt: currentPrice,
+        ...(manualSubTab !== 'cash' && manualForm.purchaseDate && { purchaseDate: manualForm.purchaseDate }),
         ...(manualForm.memo.trim() && { memo: manualForm.memo.trim() }),
       });
       toast.success('자산이 등록되었습니다.');
@@ -425,21 +430,9 @@ export default function AssetLink() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {manualSubTab === 'cash' ? (
             <div>
-              <label className="mb-2 block text-sm font-medium">취득가액 (원)</label>
-              <input
-                type="number"
-                name="purchasePrice"
-                value={manualForm.purchasePrice}
-                onChange={handleManualChange}
-                placeholder="0"
-                min="0"
-                className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-              />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium">현재가액 (원)</label>
+              <label className="mb-2 block text-sm font-medium">보유 금액 (원)</label>
               <input
                 type="number"
                 name="currentPrice"
@@ -450,18 +443,47 @@ export default function AssetLink() {
                 className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
               />
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium">취득가액 (원)</label>
+                  <input
+                    type="number"
+                    name="purchasePrice"
+                    value={manualForm.purchasePrice}
+                    onChange={handleManualChange}
+                    placeholder="0"
+                    min="0"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium">현재가액 (원)</label>
+                  <input
+                    type="number"
+                    name="currentPrice"
+                    value={manualForm.currentPrice}
+                    onChange={handleManualChange}
+                    placeholder="0"
+                    min="0"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">취득일자</label>
-            <input
-              type="date"
-              name="purchaseDate"
-              value={manualForm.purchaseDate}
-              onChange={handleManualChange}
-              className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
-            />
-          </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">취득일자</label>
+                <input
+                  type="date"
+                  name="purchaseDate"
+                  value={manualForm.purchaseDate}
+                  onChange={handleManualChange}
+                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                />
+              </div>
+            </>
+          )}
 
           <div>
             <label className="mb-2 block text-sm font-medium">메모 (선택)</label>

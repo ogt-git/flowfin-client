@@ -198,7 +198,7 @@ function HistoryItem({ portfolio }: { portfolio: Portfolio }) {
       >
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium">{formatDate(portfolio.createdAt)}</span>
-          <RiskBadge riskType={portfolio.riskType} />
+          <RiskBadge riskType={portfolio.riskType ?? portfolio.portfolioRiskType ?? ''} />
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">투자가능 {formatAmount(portfolio.investableAmount)}원</span>
@@ -207,12 +207,14 @@ function HistoryItem({ portfolio }: { portfolio: Portfolio }) {
       </button>
       {open && (
         <div className="border-t border-border px-5 pb-4 pt-3 space-y-2">
-          {(portfolio.recommendedAssets ?? []).map((asset: RecommendedAsset, i: number) => (
+          {(portfolio.recommendedAssets ?? portfolio.allocation ?? []).map((asset: RecommendedAsset, i: number) => (
             <div key={i} className={`flex items-center gap-4 rounded-xl px-4 py-3 ${i % 2 === 0 ? 'bg-white' : 'bg-secondary/30'}`}>
               <div className="flex h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
               <div className="flex-1">
                 <p className="font-medium text-sm">{asset.assetClass}</p>
-                {asset.description && <p className="mt-0.5 text-xs text-muted-foreground">{asset.description}</p>}
+                {(asset.reason ?? asset.description) && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">{asset.reason ?? asset.description}</p>
+                )}
               </div>
               <span className="text-sm font-semibold">{asset.ratio}%</span>
               <span className="text-xs text-muted-foreground w-20 text-right">{formatAmount(asset.amount)}원</span>
@@ -248,7 +250,7 @@ function PortfolioHistoryTab() {
 
   return (
     <div className="space-y-3">
-      {history.map((p, i) => <HistoryItem key={p.id ?? i} portfolio={p} />)}
+      {history.map((p, i) => <HistoryItem key={p.portfolioId ?? p.id ?? i} portfolio={p} />)}
     </div>
   );
 }
