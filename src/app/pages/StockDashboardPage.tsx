@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
 import { motion, type Variants } from 'motion/react';
 import { TrendingUp, TrendingDown, RefreshCw, PlusCircle, Loader2, Trash2 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { fetchAssetSummary, fetchStocks, fetchManualAssets, deleteManualAsset } from '../../api/assets';
+import { syncStock } from '../../api/codef';
 import type { AssetSummaryData, StockAccount, StockItem, ManualAssetItem } from '../../types/asset';
 import { STOCK_ORGANIZATIONS } from '../../types/card';
 
@@ -112,6 +114,7 @@ export default function StockDashboardPage() {
   const [stocks, setStocks] = useState<StockAccount[]>([]);
   const [manualAssets, setManualAssets] = useState<ManualAssetItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [stockError, setStockError] = useState(false);
 
   async function load() {
@@ -135,6 +138,25 @@ export default function StockDashboardPage() {
       setManualAssets((prev) => prev.filter((a) => a.id !== id));
     } catch {
       /* no-op */
+    }
+  }
+
+  async function handleRefresh() {
+    setSyncing(true);
+    try {
+      const result = await syncStock();
+      const msg = result?.savedCount === 0 ? '업데이트된 자산 정보가 없습니다.' : '자산 정보가 동기화되었습니다.';
+      toast.success(msg);
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 429) {
+        toast.error('5분에 한 번만 새로고침할 수 있습니다.');
+      } else {
+        toast.error('자산 동기화에 실패했습니다.');
+      }
+    } finally {
+      await load();
+      setSyncing(false);
     }
   }
 
@@ -172,10 +194,12 @@ export default function StockDashboardPage() {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={load}
-            className="flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
+            onClick={handleRefresh}
+            disabled={syncing}
+            className="flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm text-muted-foreground hover:bg-secondary disabled:opacity-60"
           >
-            <RefreshCw className="h-4 w-4" /> 새로고침
+            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? '동기화 중...' : '새로고침'}
           </button>
           <button
             onClick={() => navigate('/asset/link')}
@@ -246,6 +270,26 @@ export default function StockDashboardPage() {
           </button>
         </motion.div>
       ) : (
+        <>
+        {/* 계좌별 증권사 요약 */}
+        <motion.div variants={itemVariants} className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {stocks.map((acc) => {
+            const brokerName = STOCK_ORGANIZATIONS.find((o) => o.code === acc.brokerCode)?.name ?? acc.brokerCode;
+            return (
+              <div key={acc.accountNo} className="flex items-center justify-between rounded-2xl border border-border bg-white px-5 py-4 shadow-sm">
+                <div>
+                  <p className="text-sm font-medium">{brokerName}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{acc.accountNo}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-[#0A3D5C]">{formatAmount(acc.totalAsset)}원</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">예수금 {formatAmount(acc.depositReceived)}원</p>
+                </div>
+              </div>
+            );
+          })}
+        </motion.div>
+
         <div className="grid gap-8 lg:grid-cols-3">
           {/* 종목 테이블 */}
           <motion.div variants={itemVariants} className="lg:col-span-2">
@@ -306,6 +350,7 @@ export default function StockDashboardPage() {
             </div>
           </motion.div>
         </div>
+        </>
       )}
 
       {/* 수동 자산 섹션 */}
