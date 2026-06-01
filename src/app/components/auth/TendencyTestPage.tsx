@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { updateTendency, type RiskType } from '../../../api/auth';
 
@@ -193,6 +193,15 @@ export default function TendencyTestPage({ onComplete }: { onComplete: (riskType
     }
   };
 
+  useEffect(() => {
+    if (step !== 'result') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !loading) handleSubmit();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [step, loading]);
+
   const animKey = step === 'test' ? `test-${currentQ}` : 'result';
 
   return (
@@ -293,7 +302,7 @@ export default function TendencyTestPage({ onComplete }: { onComplete: (riskType
                 disabled={loading}
                 className="w-full rounded-xl bg-primary py-3 text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {loading ? '저장 중...' : '완료 — 대시보드로 이동'}
+                {loading ? '저장 중...' : '완료'}
               </button>
 
               <button

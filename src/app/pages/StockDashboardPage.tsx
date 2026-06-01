@@ -307,7 +307,7 @@ export default function StockDashboardPage() {
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-medium">수동 등록 자산</h3>
           <button
-            onClick={() => navigate('/asset/link')}
+            onClick={() => navigate('/asset/link', { state: { tab: 'manual' } })}
             className="flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm text-muted-foreground hover:bg-secondary"
           >
             <PlusCircle className="h-4 w-4" /> 자산 추가
@@ -317,7 +317,7 @@ export default function StockDashboardPage() {
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-12">
             <p className="text-sm text-muted-foreground">등록된 수동 자산이 없습니다.</p>
             <button
-              onClick={() => navigate('/asset/link')}
+              onClick={() => navigate('/asset/link', { state: { tab: 'manual' } })}
               className="flex items-center gap-2 rounded-xl bg-[#0A3D5C] px-4 py-2 text-sm text-white hover:bg-[#0A3D5C]/90"
             >
               <PlusCircle className="h-4 w-4" /> 자산 등록하기

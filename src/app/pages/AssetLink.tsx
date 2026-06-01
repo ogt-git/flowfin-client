@@ -1,5 +1,5 @@
-import { useState, useRef, type ChangeEvent, type FormEvent } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useRef, useEffect, type ChangeEvent, type FormEvent } from 'react';
+import { useNavigate, useLocation } from 'react-router';
 import { toast } from 'sonner';
 import { Loader2, TrendingUp, ChevronRight, FolderOpen } from 'lucide-react';
 import { connectAccount } from '../../api/codef';
@@ -56,7 +56,14 @@ const MANUAL_SUB_TABS: { key: ManualSubTab; label: string; placeholder: string; 
 
 export default function AssetLink() {
   const navigate = useNavigate();
-  const [mainTab, setMainTab] = useState<MainTab>('stock');
+  const location = useLocation();
+  const [mainTab, setMainTab] = useState<MainTab>(
+    (location.state as { tab?: MainTab } | null)?.tab ?? 'stock',
+  );
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const [manualSubTab, setManualSubTab] = useState<ManualSubTab>('savings');
   const [apiForm, setApiForm] = useState<ApiLinkForm>(EMPTY_API_FORM);
   const [manualForm, setManualForm] = useState<ManualAssetForm>(EMPTY_MANUAL_FORM);
