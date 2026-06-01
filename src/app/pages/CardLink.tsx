@@ -362,7 +362,8 @@ export default function CardLink() {
                       취소
                     </button>
                     <button
-                        type="submit"
+                        type="button"
+                        onClick={handleSubmit}
                         disabled={loading}
                         className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
                     >
