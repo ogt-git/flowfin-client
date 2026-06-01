@@ -381,7 +381,6 @@ export default function CardLink() {
                   </div>
                 </div>
               </div>
-      </form>
     </div>
   );
 }
