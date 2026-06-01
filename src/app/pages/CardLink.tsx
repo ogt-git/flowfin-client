@@ -193,6 +193,7 @@ export default function CardLink() {
               {CARD_ORGANIZATIONS.map((org) => (
                 <button
                   key={org.code}
+                  type="button"
                   onClick={() => handleOrg(org.code)}
                   className={`rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
                     form.organization === org.code
