@@ -183,6 +183,7 @@ export default function CardLink() {
         <CreditCard className="h-5 w-5 text-[#0A3D5C]" />
         <h2 className="text-xl font-medium">카드 연동</h2>
       </div>
+      <form onSubmit={handleSubmit}>
       <div className="grid gap-8 lg:grid-cols-2">
         {/* 좌측 — 카드사 선택 + 미리보기 */}
         <div className="space-y-6">
@@ -378,6 +379,7 @@ export default function CardLink() {
                   </div>
                 </div>
               </div>
+      </form>
     </div>
   );
 }
