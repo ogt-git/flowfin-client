@@ -183,7 +183,7 @@ export default function CardLink() {
         <CreditCard className="h-5 w-5 text-[#0A3D5C]" />
         <h2 className="text-xl font-medium">카드 연동</h2>
       </div>
-
+      <form onSubmit={handleSubmit}>
       <div className="grid gap-8 lg:grid-cols-2">
         {/* 좌측 — 카드사 선택 + 미리보기 */}
         <div className="space-y-6">
@@ -351,9 +351,6 @@ export default function CardLink() {
             </>
           )}
 
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-            비밀번호는 HTTPS 암호화 채널로 전송되며 서버에 저장되지 않습니다.
-          </div>
 
                   {/* 버튼 */}
                   <div className="flex gap-3 pt-2">
@@ -381,6 +378,7 @@ export default function CardLink() {
                   </div>
                 </div>
               </div>
+      </form>
     </div>
   );
 }

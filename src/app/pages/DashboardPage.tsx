@@ -4,12 +4,12 @@ import { motion, type Variants } from 'motion/react';
 import { TrendingUp } from 'lucide-react';
 import { SpendingSummary } from '../components/SpendingSummary';
 import { CategoryCard } from '../components/CategoryCard';
-import { AIInsight } from '../components/AIInsight';
 import { RecentTransaction } from '../components/RecentTransaction';
 import { fetchExpenses, fetchMonthlyStats } from '../../api/expenses';
-import { fetchAssetSummary } from '../../api/assets';
+import { fetchAssetSummary, fetchStocks } from '../../api/assets';
 import type { Expense, MonthlyStats } from '../../types/expense';
-import type { AssetSummaryData } from '../../types/asset';
+import type { AssetSummaryData, StockAccount } from '../../types/asset';
+import { STOCK_ORGANIZATIONS } from '../../types/card';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -36,30 +36,57 @@ function formatAmount(n: number | undefined | null) {
   return v.toLocaleString();
 }
 
+interface AssetRow {
+  name: string;
+  type: string;
+  brokerName: string;
+  amount: number;
+}
+
 export default function DashboardPage({ userName: _userName }: DashboardPageProps) {
   const navigate = useNavigate();
   const [stats, setStats] = useState<MonthlyStats | null>(null);
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
   const [assetSummary, setAssetSummary] = useState<AssetSummaryData | null>(null);
+  const [topAssets, setTopAssets] = useState<AssetRow[]>([]);
 
   useEffect(() => {
     const month = toYYYYMM(new Date());
 
-    fetchMonthlyStats(month)
+    fetchMonthlyStats()
       .then(setStats)
       .catch(() => {});
 
-    fetchExpenses({ month, page: 0, size: 4 })
+    fetchExpenses({ page: 0, size: 4 })
       .then((res) => setRecentExpenses(res.content ?? []))
       .catch(() => {});
 
     fetchAssetSummary()
       .then(setAssetSummary)
       .catch(() => {});
+
+    fetchStocks()
+      .then((accounts: StockAccount[]) => {
+        const sorted = accounts
+          .flatMap((acc) => {
+            const brokerName = STOCK_ORGANIZATIONS.find((o) => o.code === acc.brokerCode)?.name ?? acc.brokerCode;
+            return acc.items.map((item) => ({
+              name: item.itemName,
+              type: '증권',
+              brokerName,
+              amount: item.valuationAmt,
+            }));
+          })
+          .sort((a, b) => b.amount - a.amount)
+          .slice(0, 4);
+        setTopAssets(sorted);
+      })
+      .catch(() => {});
   }, []);
 
   const categoryCards = (stats?.categoryStats ?? [])
     .filter((c) => c.amount > 0)
+    .slice(0, 4)
     .map((c) => ({
       icon: c.icon,
       name: c.name,
@@ -87,7 +114,7 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
         <motion.div variants={itemVariants}>
           <div
             className="relative h-full cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-[#0A3D5C] to-[#1a5c8a] p-8 text-white shadow-xl"
-            onClick={() => navigate('/asset')}
+            onClick={() => navigate('/stocks')}
           >
             <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute -bottom-12 -left-8 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
@@ -102,12 +129,14 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
                   style={{ fontFamily: 'var(--font-family-display)' }}
                 >
                   {assetSummary
-                    ? formatAmount(assetSummary.totalStockAsset + assetSummary.totalManualAsset)
+                    ? formatAmount(assetSummary.totalStockAsset + assetSummary.totalManualAsset + assetSummary.depositReceived)
                     : '-'}
                 </h1>
                 <span className="text-2xl opacity-80">원</span>
               </div>
               <div className="flex gap-4 text-sm text-white/70">
+                <span>예수금 {assetSummary ? formatAmount(assetSummary.depositReceived) : '-'}원</span>
+                <span>·</span>
                 <span>증권 {assetSummary ? formatAmount(assetSummary.totalStockAsset) : '-'}원</span>
                 <span>·</span>
                 <span>수동 {assetSummary ? formatAmount(assetSummary.totalManualAsset) : '-'}원</span>
@@ -123,25 +152,27 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
         </motion.div>
       </div>
 
-      {/* AI 인사이트 */}
-      <motion.div variants={itemVariants} className="mb-8">
-        <AIInsight message="AI 분석을 불러오는 중입니다..." />
-      </motion.div>
-
       {/* Category */}
-      {categoryCards.length > 0 && (
-        <motion.div variants={itemVariants} className="mb-8">
-          <h3 className="mb-5">카테고리별 지출</h3>
+      <motion.div variants={itemVariants} className="mb-8">
+        <h3 className="mb-5">
+          카테고리별 지출
+          {stats?.month && (
+            <span className="ml-2 text-sm font-normal text-muted-foreground">{stats.month}</span>
+          )}
+        </h3>
+        {categoryCards.length === 0 ? (
+          <p className="text-sm text-muted-foreground">카테고리별 지출 내역이 없습니다.</p>
+        ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {categoryCards.map((cat) => (
               <CategoryCard key={cat.name} {...cat} />
             ))}
           </div>
-        </motion.div>
-      )}
+        )}
+      </motion.div>
 
       {/* Recent Transactions */}
-      <motion.div variants={itemVariants}>
+      <motion.div variants={itemVariants} className="mb-8">
         <div className="mb-5 flex items-center justify-between">
           <h3>최근 내역</h3>
           <button
@@ -163,6 +194,39 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
                 amount={expense.amount}
                 category={expense.categoryName}
               />
+            ))}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Top Assets */}
+      <motion.div variants={itemVariants}>
+        <div className="mb-5 flex items-center justify-between">
+          <h3>주요 자산</h3>
+          <button
+            onClick={() => navigate('/stocks')}
+            className="rounded-lg px-4 py-2 text-sm text-[#0A3D5C] transition-colors hover:bg-secondary"
+          >
+            전체보기 →
+          </button>
+        </div>
+        {topAssets.length === 0 ? (
+          <p className="text-sm text-muted-foreground">보유 자산 내역이 없습니다.</p>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {topAssets.map((asset, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-2xl border border-border bg-white px-5 py-4 shadow-sm"
+              >
+                <div>
+                  <p className="font-medium text-sm">{asset.name}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{asset.brokerName}</p>
+                </div>
+                <p className="text-sm font-semibold text-[#0A3D5C]">
+                  {formatAmount(asset.amount)}원
+                </p>
+              </div>
             ))}
           </div>
         )}

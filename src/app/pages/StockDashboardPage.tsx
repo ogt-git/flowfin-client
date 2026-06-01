@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, RefreshCw, PlusCircle, Loader2, Trash2 } from
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { fetchAssetSummary, fetchStocks, fetchManualAssets, deleteManualAsset } from '../../api/assets';
 import type { AssetSummaryData, StockAccount, StockItem, ManualAssetItem } from '../../types/asset';
+import { STOCK_ORGANIZATIONS } from '../../types/card';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -67,7 +68,7 @@ function SummaryCard({
   );
 }
 
-function StockRow({ item, index }: { item: StockItem; index: number }) {
+function StockRow({ item, brokerName, index }: { item: StockItem; brokerName: string; index: number }) {
   const pl = item.valuationPl ?? 0;
   const rate = Number(item.earningsRate ?? 0);
   const isPositive = pl >= 0;
@@ -76,7 +77,7 @@ function StockRow({ item, index }: { item: StockItem; index: number }) {
       <td className="px-4 py-3">
         <div>
           <p className="font-medium text-sm">{item.itemName}</p>
-          <p className="text-xs text-muted-foreground">{item.itemCode}</p>
+          <p className="text-xs text-muted-foreground">{item.itemCode} · {brokerName}</p>
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-right">{(item.quantity ?? 0).toLocaleString()}</td>
@@ -139,7 +140,10 @@ export default function StockDashboardPage() {
 
   useEffect(() => { load(); }, []);
 
-  const allItems: StockItem[] = stocks.flatMap((a) => a.items);
+  const allItems = stocks.flatMap((a) => {
+    const brokerName = STOCK_ORGANIZATIONS.find((o) => o.code === a.brokerCode)?.name ?? a.brokerCode;
+    return a.items.map((item) => ({ ...item, brokerName }));
+  });
   const chartData = buildChartData(allItems);
   const totalValuationPl = allItems.reduce((s, i) => s + (i.valuationPl ?? 0), 0);
   const isPositive = totalValuationPl >= 0;
@@ -189,9 +193,11 @@ export default function StockDashboardPage() {
           <motion.div variants={itemVariants} className="mb-4 rounded-2xl border border-border bg-[#0A3D5C] p-6 text-white shadow-sm">
             <p className="mb-1 text-sm text-white/70">전체 자산 총합</p>
             <p className="text-3xl font-bold">
-              {formatAmount(assetSummary.totalStockAsset + assetSummary.totalManualAsset)}원
+              {formatAmount(assetSummary.totalStockAsset + assetSummary.totalManualAsset + assetSummary.depositReceived)}원
             </p>
             <div className="mt-3 flex gap-4 text-sm text-white/70">
+              <span>예수금 {formatAmount(assetSummary.depositReceived)}원</span>
+              <span>·</span>
               <span>증권 {formatAmount(assetSummary.totalStockAsset)}원</span>
               <span>·</span>
               <span>수동 자산 {formatAmount(assetSummary.totalManualAsset)}원</span>
@@ -259,7 +265,7 @@ export default function StockDashboardPage() {
                   </thead>
                   <tbody>
                     {allItems.map((item, i) => (
-                      <StockRow key={`${item.itemCode}-${i}`} item={item} index={i} />
+                      <StockRow key={`${item.itemCode}-${i}`} item={item} brokerName={item.brokerName} index={i} />
                     ))}
                   </tbody>
                 </table>
