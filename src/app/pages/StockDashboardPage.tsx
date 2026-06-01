@@ -184,26 +184,41 @@ export default function StockDashboardPage() {
 
       {/* 요약 카드 */}
       {assetSummary && (
-        <motion.div variants={itemVariants} className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryCard
-            label="증권 총 자산"
-            value={`${formatAmount(assetSummary.totalStockAsset)}원`}
-          />
-          <SummaryCard
-            label="예수금"
-            value={`${formatAmount(assetSummary.depositReceived)}원`}
-          />
-          <SummaryCard
-            label="평가 손익"
-            value={`${isPositive ? '+' : ''}${formatAmount(totalValuationPl)}원`}
-            sub={isPositive ? '수익 중' : '손실 중'}
-            positive={isPositive}
-          />
-          <SummaryCard
-            label="투자 가능 금액"
-            value={`${formatAmount(assetSummary.investableAmount)}원`}
-          />
-        </motion.div>
+        <>
+          {/* 전체 자산 총합 */}
+          <motion.div variants={itemVariants} className="mb-4 rounded-2xl border border-border bg-[#0A3D5C] p-6 text-white shadow-sm">
+            <p className="mb-1 text-sm text-white/70">전체 자산 총합</p>
+            <p className="text-3xl font-bold">
+              {formatAmount(assetSummary.totalStockAsset + assetSummary.totalManualAsset)}원
+            </p>
+            <div className="mt-3 flex gap-4 text-sm text-white/70">
+              <span>증권 {formatAmount(assetSummary.totalStockAsset)}원</span>
+              <span>·</span>
+              <span>수동 자산 {formatAmount(assetSummary.totalManualAsset)}원</span>
+            </div>
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <SummaryCard
+              label="증권 총 자산"
+              value={`${formatAmount(assetSummary.totalStockAsset)}원`}
+            />
+            <SummaryCard
+              label="예수금"
+              value={`${formatAmount(assetSummary.depositReceived)}원`}
+            />
+            <SummaryCard
+              label="평가 손익"
+              value={`${isPositive ? '+' : ''}${formatAmount(totalValuationPl)}원`}
+              sub={isPositive ? '수익 중' : '손실 중'}
+              positive={isPositive}
+            />
+            <SummaryCard
+              label="투자 가능 금액"
+              value={`${formatAmount(assetSummary.investableAmount)}원`}
+            />
+          </motion.div>
+        </>
       )}
 
       {stockError ? (

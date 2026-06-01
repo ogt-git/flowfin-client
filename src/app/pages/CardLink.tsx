@@ -355,38 +355,33 @@ export default function CardLink() {
             비밀번호는 HTTPS 암호화 채널로 전송되며 서버에 저장되지 않습니다.
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex-1 rounded-xl border border-border bg-white py-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
-            >
-              취소
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={loading || !hyundaiFieldsValid}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  카드 연동하기
-                  <ChevronRight className="h-4 w-4" />
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {errorModal && (
-        <CodefErrorModal
-          ux={errorModal}
-          onClose={() => setErrorModal(null)}
-          onRetry={handleRetry}
-        />
-      )}
+                  {/* 버튼 */}
+                  <div className="flex gap-3 pt-2">
+                    <button
+                        type="button"
+                        onClick={() => navigate(-1)}
+                        className="flex-1 rounded-xl border border-border bg-white py-3 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
+                    >
+                      취소
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
+                    >
+                      {loading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                          <>
+                            카드 연동하기
+                            <ChevronRight className="h-4 w-4" />
+                          </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+      </form>
     </div>
   );
 }
