@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, type Variants} from 'motion/react';
 import { PenLine, Search, Eye, Heart, MessageCircle } from 'lucide-react';
@@ -36,7 +36,7 @@ export default function CommunityListPage() {
   };
 
   return (
-      <div className="p-8">
+      <div className="mx-auto max-w-4xl p-4 lg:p-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 style={{ fontFamily: 'var(--font-family-display)' }}>커뮤니티</h2>
@@ -44,7 +44,7 @@ export default function CommunityListPage() {
           </div>
           <button
               onClick={() => navigate('/community/new')}
-              className="flex items-center gap-2 rounded-xl bg-[#0A3D5C] px-5 py-2.5 text-sm text-white shadow-md transition-all hover:bg-[#0F4C81] hover:shadow-lg"
+              className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg"
           >
             <PenLine className="h-4 w-4" />
             글쓰기
@@ -59,7 +59,7 @@ export default function CommunityListPage() {
                 placeholder="검색어를 입력하세요"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full rounded-xl border border-border bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/10"
+                className="w-full rounded-xl border border-border bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
             />
           </div>
           <button
@@ -77,8 +77,8 @@ export default function CommunityListPage() {
                   onClick={() => setCategory(cat)}
                   className={`rounded-full px-4 py-1.5 text-sm transition-all ${
                       category === cat
-                          ? 'bg-[#0A3D5C] text-white shadow-md'
-                          : 'border border-border bg-white text-muted-foreground hover:border-[#0A3D5C] hover:text-[#0A3D5C]'
+                          ? 'bg-primary text-white shadow-md'
+                          : 'border border-border bg-white text-muted-foreground hover:border-primary hover:text-primary'
                   }`}
               >
                 {cat}
@@ -95,7 +95,7 @@ export default function CommunityListPage() {
               <p>게시글이 없습니다.</p>
               <button
                   onClick={() => navigate('/community/new')}
-                  className="text-sm text-[#0A3D5C] underline underline-offset-2"
+                  className="text-sm text-primary underline underline-offset-2"
               >
                 첫 글을 작성해보세요 →
               </button>
@@ -112,17 +112,17 @@ export default function CommunityListPage() {
                       key={post.id}
                       variants={itemVariants}
                       onClick={() => navigate(`/community/${post.id}`)}
-                      className="group cursor-pointer rounded-2xl border border-border bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-[#0A3D5C]/30 hover:shadow-md"
+                      className="group cursor-pointer rounded-2xl border border-border bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="mb-2 flex items-center gap-2">
-                    <span className="rounded-full bg-[#EFF6FF] px-2.5 py-0.5 text-xs text-[#1E40AF]">
+                    <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs text-accent-foreground">
                       {post.category}
                     </span>
                           <span className="text-xs text-muted-foreground">{post.createdAt}</span>
                         </div>
-                        <h4 className="mb-1 truncate group-hover:text-[#0A3D5C]">{post.title}</h4>
+                        <h4 className="mb-1 truncate group-hover:text-primary">{post.title}</h4>
                         <p className="text-sm text-muted-foreground line-clamp-1">{post.content}</p>
                       </div>
                     </div>

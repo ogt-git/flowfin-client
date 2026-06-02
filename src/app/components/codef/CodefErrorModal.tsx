@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import type { CodefModalInputUx } from '../../../constants/codefErrors';
 
 interface Props {
@@ -36,7 +36,7 @@ export function CodefErrorModal({ ux, onClose, onRetry }: Props) {
             }}
             placeholder="0000-0000-0000-0000"
             maxLength={19}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#0A3D5C]"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary"
           />
         </div>
 
@@ -54,7 +54,7 @@ export function CodefErrorModal({ ux, onClose, onRetry }: Props) {
             }}
             placeholder={`비밀번호 ${passwordMaxLength}자리`}
             maxLength={passwordMaxLength}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#0A3D5C]"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary"
           />
         </div>
 
@@ -62,7 +62,7 @@ export function CodefErrorModal({ ux, onClose, onRetry }: Props) {
           <button
             onClick={() => onRetry({ cardNumber, cardPassword })}
             disabled={!isValid}
-            className="flex-1 rounded-md bg-[#0A3D5C] py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="flex-1 rounded-md bg-primary py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             확인
           </button>

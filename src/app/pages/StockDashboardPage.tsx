@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router';
 import { motion, type Variants } from 'motion/react';
@@ -162,6 +162,24 @@ export default function StockDashboardPage() {
 
   useEffect(() => { load(); }, []);
 
+  // 30초마다 백그라운드 자동 새로고침 (수동 새로고침 중에는 스킵)
+  const autoRefresh = useCallback(async () => {
+    if (syncing) return;
+    const [summaryResult, stocksResult, manualResult] = await Promise.allSettled([
+      fetchAssetSummary(),
+      fetchStocks(),
+      fetchManualAssets(),
+    ]);
+    if (summaryResult.status === 'fulfilled') setAssetSummary(summaryResult.value);
+    if (stocksResult.status === 'fulfilled') { setStocks(stocksResult.value); setStockError(false); }
+    if (manualResult.status === 'fulfilled') setManualAssets(manualResult.value);
+  }, [syncing]);
+
+  useEffect(() => {
+    const id = setInterval(autoRefresh, 30_000);
+    return () => clearInterval(id);
+  }, [autoRefresh]);
+
   const allItems = stocks.flatMap((a) => {
     const brokerName = STOCK_ORGANIZATIONS.find((o) => o.code === a.brokerCode)?.name ?? a.brokerCode;
     return a.items.map((item) => ({ ...item, brokerName }));
@@ -173,7 +191,7 @@ export default function StockDashboardPage() {
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#0A3D5C]" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -181,29 +199,29 @@ export default function StockDashboardPage() {
 
   return (
     <motion.div
-      className="p-8"
+      className="p-4 lg:p-8"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
       {/* 헤더 */}
-      <motion.div variants={itemVariants} className="mb-8 flex items-center justify-between">
+      <motion.div variants={itemVariants} className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <TrendingUp className="h-5 w-5 text-[#0A3D5C]" />
+          <TrendingUp className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-medium">증권 현황</h2>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             onClick={handleRefresh}
             disabled={syncing}
-            className="flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2 text-sm text-muted-foreground hover:bg-secondary disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-sm text-muted-foreground hover:bg-secondary disabled:opacity-60 lg:px-4"
           >
             <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-            {syncing ? '동기화 중...' : '새로고침'}
+            <span className="hidden sm:inline">{syncing ? '동기화 중...' : '새로고침'}</span>
           </button>
           <button
             onClick={() => navigate('/asset/link')}
-            className="flex items-center gap-2 rounded-xl bg-[#0A3D5C] px-4 py-2 text-sm text-white hover:bg-[#0A3D5C]/90"
+            className="flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm text-white hover:bg-primary/90 lg:px-4"
           >
             <PlusCircle className="h-4 w-4" /> 증권 계좌 연동하기
           </button>
@@ -214,7 +232,7 @@ export default function StockDashboardPage() {
       {assetSummary && (
         <>
           {/* 전체 자산 총합 */}
-          <motion.div variants={itemVariants} className="mb-4 rounded-2xl border border-border bg-[#0A3D5C] p-6 text-white shadow-sm">
+          <motion.div variants={itemVariants} className="mb-4 rounded-2xl border border-border bg-primary p-6 text-white shadow-sm">
             <p className="mb-1 text-sm text-white/70">전체 자산 총합</p>
             <p className="text-3xl font-bold">
               {formatAmount(assetSummary.totalStockAsset + assetSummary.totalManualAsset + assetSummary.depositReceived)}원
@@ -264,7 +282,7 @@ export default function StockDashboardPage() {
           <p className="text-muted-foreground">보유 종목이 없습니다.</p>
           <button
             onClick={() => navigate('/portfolio/link')}
-            className="flex items-center gap-2 rounded-xl bg-[#0A3D5C] px-5 py-2.5 text-sm text-white hover:bg-[#0A3D5C]/90"
+            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm text-white hover:bg-primary/90"
           >
             <TrendingUp className="h-4 w-4" /> 포트폴리오 보기
           </button>
@@ -282,7 +300,7 @@ export default function StockDashboardPage() {
                   <p className="mt-0.5 text-xs text-muted-foreground">{acc.accountNo}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-[#0A3D5C]">{formatAmount(acc.totalAsset)}원</p>
+                  <p className="text-sm font-semibold text-primary">{formatAmount(acc.totalAsset)}원</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">예수금 {formatAmount(acc.depositReceived)}원</p>
                 </div>
               </div>
@@ -369,7 +387,7 @@ export default function StockDashboardPage() {
             <p className="text-sm text-muted-foreground">등록된 수동 자산이 없습니다.</p>
             <button
               onClick={() => navigate('/asset/link', { state: { tab: 'manual' } })}
-              className="flex items-center gap-2 rounded-xl bg-[#0A3D5C] px-4 py-2 text-sm text-white hover:bg-[#0A3D5C]/90"
+              className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm text-white hover:bg-primary/90"
             >
               <PlusCircle className="h-4 w-4" /> 자산 등록하기
             </button>

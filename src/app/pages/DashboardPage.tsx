@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, type Variants } from 'motion/react';
 import { TrendingUp } from 'lucide-react';
@@ -97,7 +97,7 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
 
   return (
     <motion.div
-      className="p-8"
+      className="p-4 lg:p-8"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
@@ -113,7 +113,7 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
         </motion.div>
         <motion.div variants={itemVariants}>
           <div
-            className="relative h-full cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-[#0A3D5C] to-[#1a5c8a] p-8 text-white shadow-xl"
+            className="relative h-full cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-primary-dark p-8 text-white shadow-xl"
             onClick={() => navigate('/stocks')}
           >
             <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
@@ -177,7 +177,7 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
           <h3>최근 내역</h3>
           <button
             onClick={() => navigate('/expenses')}
-            className="rounded-lg px-4 py-2 text-sm text-[#0A3D5C] transition-colors hover:bg-secondary"
+            className="rounded-lg px-4 py-2 text-sm text-primary transition-colors hover:bg-secondary"
           >
             전체보기 →
           </button>
@@ -205,7 +205,7 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
           <h3>주요 자산</h3>
           <button
             onClick={() => navigate('/stocks')}
-            className="rounded-lg px-4 py-2 text-sm text-[#0A3D5C] transition-colors hover:bg-secondary"
+            className="rounded-lg px-4 py-2 text-sm text-primary transition-colors hover:bg-secondary"
           >
             전체보기 →
           </button>
@@ -223,7 +223,7 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
                   <p className="font-medium text-sm">{asset.name}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{asset.brokerName}</p>
                 </div>
-                <p className="text-sm font-semibold text-[#0A3D5C]">
+                <p className="text-sm font-semibold text-primary">
                   {formatAmount(asset.amount)}원
                 </p>
               </div>

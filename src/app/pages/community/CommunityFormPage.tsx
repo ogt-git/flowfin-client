@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft } from 'lucide-react';
@@ -63,7 +63,7 @@ export default function CommunityFormPage() {
 
   return (
     <motion.div
-      className="p-8 max-w-3xl"
+      className="mx-auto max-w-3xl p-4 lg:p-8"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
@@ -86,7 +86,7 @@ export default function CommunityFormPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-white p-8 space-y-6">
+      <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-white p-5 sm:p-8 space-y-6">
         {/* 카테고리 */}
         <div>
           <label className="mb-2 block text-sm font-medium">카테고리</label>
@@ -98,8 +98,8 @@ export default function CommunityFormPage() {
                 onClick={() => setForm((f) => ({ ...f, category: cat }))}
                 className={`rounded-full px-4 py-1.5 text-sm transition-all ${
                   form.category === cat
-                    ? 'bg-[#0A3D5C] text-white shadow-md'
-                    : 'border border-border bg-white text-muted-foreground hover:border-[#0A3D5C] hover:text-[#0A3D5C]'
+                    ? 'bg-primary text-white shadow-md'
+                    : 'border border-border bg-white text-muted-foreground hover:border-primary hover:text-primary'
                 }`}
               >
                 {cat}
@@ -116,10 +116,10 @@ export default function CommunityFormPage() {
             placeholder="제목을 입력하세요"
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-[#0A3D5C]/10 ${
+            className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/10 ${
               errors.title
                 ? 'border-red-400 focus:border-red-400'
-                : 'border-border focus:border-[#0A3D5C]'
+                : 'border-border focus:border-primary'
             }`}
           />
           {errors.title && <p className="mt-1 text-xs text-red-500">{errors.title}</p>}
@@ -134,10 +134,10 @@ export default function CommunityFormPage() {
             rows={12}
             value={form.content}
             onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-            className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-[#0A3D5C]/10 ${
+            className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/10 ${
               errors.content
                 ? 'border-red-400 focus:border-red-400'
-                : 'border-border focus:border-[#0A3D5C]'
+                : 'border-border focus:border-primary'
             }`}
           />
           {errors.content && <p className="mt-1 text-xs text-red-500">{errors.content}</p>}
@@ -155,7 +155,7 @@ export default function CommunityFormPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="rounded-xl bg-[#0A3D5C] px-6 py-2.5 text-sm text-white shadow-md transition-all hover:bg-[#0F4C81] disabled:opacity-60"
+            className="rounded-xl bg-primary px-6 py-2.5 text-sm text-white shadow-md transition-all hover:bg-primary/90 disabled:opacity-60"
           >
             {submitting ? '저장 중...' : isEdit ? '수정 완료' : '게시하기'}
           </button>
