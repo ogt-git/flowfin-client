@@ -1,4 +1,4 @@
-import { useState, useRef, type ChangeEvent } from 'react';
+﻿import { useState, useRef, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { Loader2, CreditCard, ChevronRight, FolderOpen } from 'lucide-react';
@@ -178,9 +178,9 @@ export default function CardLink() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 lg:p-8">
       <div className="mb-6 flex items-center gap-3">
-        <CreditCard className="h-5 w-5 text-[#0A3D5C]" />
+        <CreditCard className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-medium">카드 연동</h2>
       </div>
       <form onSubmit={handleSubmit}>
@@ -197,8 +197,8 @@ export default function CardLink() {
                   onClick={() => handleOrg(org.code)}
                   className={`rounded-xl border px-4 py-3 text-sm font-medium transition-all ${
                     form.organization === org.code
-                      ? 'border-[#0A3D5C] bg-[#0A3D5C] text-white shadow-md'
-                      : 'border-border bg-white text-foreground hover:border-[#0A3D5C]/40 hover:bg-secondary'
+                      ? 'border-primary bg-primary text-white shadow-md'
+                      : 'border-border bg-white text-foreground hover:border-primary/40 hover:bg-secondary'
                   }`}
                 >
                   {org.name}
@@ -234,7 +234,7 @@ export default function CardLink() {
                     value={opt.value}
                     checked={form.loginType === opt.value}
                     onChange={handleChange}
-                    className="accent-[#0A3D5C]"
+                    className="accent-primary"
                   />
                   {opt.label}
                 </label>
@@ -258,8 +258,8 @@ export default function CardLink() {
                   onClick={() => folderRef.current?.click()}
                   className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${
                     derFile && keyFile
-                      ? 'border-[#0A3D5C] bg-[#0A3D5C]/5 text-[#0A3D5C]'
-                      : 'border-border bg-input-background text-muted-foreground hover:border-[#0A3D5C]/40'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border bg-input-background text-muted-foreground hover:border-primary/40'
                   }`}
                 >
                   <FolderOpen className="h-4 w-4 shrink-0" />
@@ -267,8 +267,8 @@ export default function CardLink() {
                 </button>
                 {(derFile || keyFile) && (
                   <div className="mt-2 space-y-1 text-xs">
-                    <p className={derFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{derFile ? `✓ ${derFile.name}` : '✗ .der 파일 없음'}</p>
-                    <p className={keyFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{keyFile ? `✓ ${keyFile.name}` : '✗ .key 파일 없음'}</p>
+                    <p className={derFile ? 'text-primary' : 'text-red-500'}>{derFile ? `✓ ${derFile.name}` : '✗ .der 파일 없음'}</p>
+                    <p className={keyFile ? 'text-primary' : 'text-red-500'}>{keyFile ? `✓ ${keyFile.name}` : '✗ .key 파일 없음'}</p>
                   </div>
                 )}
                 <div className="mt-2 rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground space-y-0.5">
@@ -286,7 +286,7 @@ export default function CardLink() {
                   value={form.password}
                   onChange={handleChange}
                   placeholder="공인인증서 비밀번호"
-                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </>
@@ -300,7 +300,7 @@ export default function CardLink() {
                   value={form.id}
                   onChange={handleChange}
                   placeholder="금융기관 로그인 아이디"
-                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div>
@@ -311,7 +311,7 @@ export default function CardLink() {
                   value={form.password}
                   onChange={handleChange}
                   placeholder="금융기관 로그인 비밀번호"
-                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
 
@@ -331,7 +331,7 @@ export default function CardLink() {
                       onChange={handleChange}
                       placeholder="0000-0000-0000-0000"
                       maxLength={19}
-                      className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                      className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                   <div>
@@ -344,7 +344,7 @@ export default function CardLink() {
                       onChange={handleChange}
                       placeholder="카드 비밀번호 4자리"
                       maxLength={4}
-                      className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                      className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 </>
@@ -366,7 +366,7 @@ export default function CardLink() {
                         type="button"
                         onClick={handleSubmit}
                         disabled={loading}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-primary/90 disabled:opacity-60"
                     >
                       {loading ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

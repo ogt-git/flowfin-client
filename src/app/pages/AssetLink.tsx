@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ChangeEvent, type FormEvent } from 'react';
+﻿import { useState, useRef, useEffect, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { toast } from 'sonner';
 import { Loader2, TrendingUp, ChevronRight, FolderOpen } from 'lucide-react';
@@ -188,9 +188,9 @@ export default function AssetLink() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 lg:p-8">
       <div className="mb-6 flex items-center gap-3">
-        <TrendingUp className="h-5 w-5 text-[#0A3D5C]" />
+        <TrendingUp className="h-5 w-5 text-primary" />
         <h2 className="text-xl font-medium">자산 연동</h2>
       </div>
 
@@ -203,7 +203,7 @@ export default function AssetLink() {
             onClick={() => handleMainTabChange(tab)}
             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
               mainTab === tab
-                ? 'bg-[#0A3D5C] text-white shadow-md'
+                ? 'bg-primary text-white shadow-md'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -222,7 +222,7 @@ export default function AssetLink() {
               onClick={() => handleSubTabChange(sub.key)}
               className={`rounded-lg border px-4 py-2 text-sm font-medium transition-all ${
                 manualSubTab === sub.key
-                  ? 'border-[#0A3D5C] bg-[#0A3D5C]/10 text-[#0A3D5C]'
+                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border bg-white text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -245,8 +245,8 @@ export default function AssetLink() {
                   onClick={() => setApiForm((prev) => ({ ...prev, organization: org.code }))}
                   className={`rounded-xl border px-4 py-3 text-sm font-medium transition-all text-left ${
                     apiForm.organization === org.code
-                      ? 'border-[#0A3D5C] bg-[#0A3D5C] text-white shadow-md'
-                      : 'border-border bg-white text-foreground hover:border-[#0A3D5C]/40 hover:bg-secondary'
+                      ? 'border-primary bg-primary text-white shadow-md'
+                      : 'border-border bg-white text-foreground hover:border-primary/40 hover:bg-secondary'
                   }`}
                 >
                   {org.name}
@@ -272,7 +272,7 @@ export default function AssetLink() {
                       value={opt.value}
                       checked={apiForm.loginType === opt.value}
                       onChange={handleApiChange}
-                      className="accent-[#0A3D5C]"
+                      className="accent-primary"
                     />
                     {opt.label}
                   </label>
@@ -296,7 +296,7 @@ export default function AssetLink() {
                     type="button"
                     onClick={() => folderRef.current?.click()}
                     className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${
-                      derFile && keyFile ? 'border-[#0A3D5C] bg-[#0A3D5C]/5 text-[#0A3D5C]' : 'border-border bg-input-background text-muted-foreground hover:border-[#0A3D5C]/40'
+                      derFile && keyFile ? 'border-primary bg-primary/5 text-primary' : 'border-border bg-input-background text-muted-foreground hover:border-primary/40'
                     }`}
                   >
                     <FolderOpen className="h-4 w-4 shrink-0" />
@@ -304,8 +304,8 @@ export default function AssetLink() {
                   </button>
                   {(derFile || keyFile) && (
                     <div className="mt-2 space-y-1 text-xs">
-                      <p className={derFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{derFile ? `✓ ${derFile.name}` : '✗ .der 파일 없음'}</p>
-                      <p className={keyFile ? 'text-[#0A3D5C]' : 'text-red-500'}>{keyFile ? `✓ ${keyFile.name}` : '✗ .key 파일 없음'}</p>
+                      <p className={derFile ? 'text-primary' : 'text-red-500'}>{derFile ? `✓ ${derFile.name}` : '✗ .der 파일 없음'}</p>
+                      <p className={keyFile ? 'text-primary' : 'text-red-500'}>{keyFile ? `✓ ${keyFile.name}` : '✗ .key 파일 없음'}</p>
                     </div>
                   )}
                   <div className="mt-2 rounded-lg bg-secondary px-3 py-2 text-xs text-muted-foreground space-y-0.5">
@@ -323,7 +323,7 @@ export default function AssetLink() {
                     value={apiForm.password}
                     onChange={handleApiChange}
                     placeholder="공인인증서 비밀번호"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div>
@@ -334,7 +334,7 @@ export default function AssetLink() {
                     value={apiForm.accountNumber}
                     onChange={handleApiChange}
                     placeholder="계좌번호 입력 (숫자만)"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div>
@@ -345,7 +345,7 @@ export default function AssetLink() {
                     value={apiForm.accountPassword}
                     onChange={handleApiChange}
                     placeholder="증권 계좌 비밀번호"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </>
@@ -359,7 +359,7 @@ export default function AssetLink() {
                     value={apiForm.id}
                     onChange={handleApiChange}
                     placeholder="금융기관 로그인 아이디"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div>
@@ -370,7 +370,7 @@ export default function AssetLink() {
                     value={apiForm.password}
                     onChange={handleApiChange}
                     placeholder="금융기관 로그인 비밀번호"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div>
@@ -381,7 +381,7 @@ export default function AssetLink() {
                     value={apiForm.accountNumber}
                     onChange={handleApiChange}
                     placeholder="계좌번호 입력 (숫자만)"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div>
@@ -392,7 +392,7 @@ export default function AssetLink() {
                     value={apiForm.accountPassword}
                     onChange={handleApiChange}
                     placeholder="증권 계좌 비밀번호"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </>
@@ -410,7 +410,7 @@ export default function AssetLink() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-primary/90 disabled:opacity-60"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>자산 연동하기 <ChevronRight className="h-4 w-4" /></>}
               </button>
@@ -430,7 +430,7 @@ export default function AssetLink() {
               value={manualForm.assetName}
               onChange={handleManualChange}
               placeholder={MANUAL_SUB_TABS.find((s) => s.key === manualSubTab)!.placeholder}
-              className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+              className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -444,7 +444,7 @@ export default function AssetLink() {
                 onChange={handleManualChange}
                 placeholder="0"
                 min="0"
-                className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
           ) : (
@@ -459,7 +459,7 @@ export default function AssetLink() {
                     onChange={handleManualChange}
                     placeholder="0"
                     min="0"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
                 <div>
@@ -471,7 +471,7 @@ export default function AssetLink() {
                     onChange={handleManualChange}
                     placeholder="0"
                     min="0"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
@@ -483,7 +483,7 @@ export default function AssetLink() {
                   name="purchaseDate"
                   value={manualForm.purchaseDate}
                   onChange={handleManualChange}
-                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20"
+                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </>
@@ -497,7 +497,7 @@ export default function AssetLink() {
               onChange={handleManualChange}
               rows={3}
               placeholder="추가 메모를 입력하세요"
-              className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/20 resize-none"
+              className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
             />
           </div>
 
@@ -512,7 +512,7 @@ export default function AssetLink() {
             <button
               type="submit"
               disabled={loading}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0A3D5C] py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-[#0A3D5C]/90 disabled:opacity-60"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-primary/90 disabled:opacity-60"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>저장하기 <ChevronRight className="h-4 w-4" /></>}
             </button>

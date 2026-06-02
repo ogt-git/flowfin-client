@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion, type Variants} from 'motion/react';
 import { ArrowLeft, Eye, Heart, MessageCircle, Pencil, Trash2, X } from 'lucide-react';
@@ -88,7 +88,7 @@ export default function CommunityDetailPage() {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3 text-muted-foreground">
         <p>{error || '게시글을 찾을 수 없습니다.'}</p>
-        <button onClick={() => navigate('/community')} className="text-sm text-[#0A3D5C] underline">
+        <button onClick={() => navigate('/community')} className="text-sm text-primary underline">
           목록으로
         </button>
       </div>
@@ -100,7 +100,7 @@ export default function CommunityDetailPage() {
   return (
     <>
       <motion.div
-        className="p-8 max-w-3xl"
+        className="mx-auto max-w-3xl p-4 lg:p-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }}
@@ -115,11 +115,11 @@ export default function CommunityDetailPage() {
         </button>
 
         {/* 게시글 */}
-        <div className="rounded-2xl border border-border bg-white p-8">
+        <div className="rounded-2xl border border-border bg-white p-5 sm:p-8">
           {/* 헤더 */}
           <div className="mb-6 border-b border-border pb-6">
             <div className="mb-3 flex items-center gap-2">
-              <span className="rounded-full bg-[#EFF6FF] px-2.5 py-0.5 text-xs text-[#1E40AF]">
+              <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs text-accent-foreground">
                 {post.category}
               </span>
               <span className="text-xs text-muted-foreground">{post.createdAt}</span>
@@ -197,7 +197,7 @@ export default function CommunityDetailPage() {
 
           {/* 댓글 입력 */}
           <div className="mt-5 flex gap-3 border-t border-border pt-5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0A3D5C] to-[#10B981] text-xs text-white">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-success text-xs text-white">
               {currentUser.charAt(0) || 'U'}
             </div>
             <div className="flex flex-1 gap-2">
@@ -207,12 +207,12 @@ export default function CommunityDetailPage() {
                 onChange={(e) => setCommentInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit()}
                 placeholder="댓글을 입력하세요"
-                className="flex-1 rounded-xl border border-border bg-input-background px-4 py-2 text-sm outline-none transition-all focus:border-[#0A3D5C] focus:ring-2 focus:ring-[#0A3D5C]/10"
+                className="flex-1 rounded-xl border border-border bg-input-background px-4 py-2 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/10"
               />
               <button
                 onClick={handleCommentSubmit}
                 disabled={submittingComment || !commentInput.trim()}
-                className="rounded-xl bg-[#0A3D5C] px-4 py-2 text-sm text-white transition-colors hover:bg-[#0F4C81] disabled:opacity-50"
+                className="rounded-xl bg-primary px-4 py-2 text-sm text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
               >
                 등록
               </button>

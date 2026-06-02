@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+﻿import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Pencil, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
@@ -165,6 +165,29 @@ export default function ExpensesPage() {
     fetchMonthlyStats(month).then(setStats).catch(() => {});
   }, [month]);
 
+  // 1분마다 백그라운드 자동 새로고침 (편집 중·새로고침 중에는 스킵)
+  const autoRefresh = useCallback(async () => {
+    if (saving || editingId !== null || refreshing) return;
+    try {
+      const result = await fetchExpenses({
+        month,
+        categoryType: filterType === 'ALL' ? undefined : filterType,
+        page,
+        size: PAGE_SIZE,
+      });
+      setExpenses(result.content);
+      setTotalPages(result.totalPages);
+      setTotalElements(result.totalElements);
+      setTotalAmount(result.totalAmount ?? 0);
+    } catch { /* silent */ }
+    fetchMonthlyStats(month).then(setStats).catch(() => {});
+  }, [month, filterType, page, saving, editingId, refreshing]);
+
+  useEffect(() => {
+    const id = setInterval(autoRefresh, 60_000);
+    return () => clearInterval(id);
+  }, [autoRefresh]);
+
   function startEdit(expense: Expense) {
     setEditingId(expense.expenseId);
     setEditCategoryId(expense.categoryId);
@@ -233,18 +256,18 @@ export default function ExpensesPage() {
   );
 
   return (
-    <div className="p-8">
+    <div className="p-4 lg:p-8">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold">지출 내역</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={reload}
             disabled={refreshing}
             className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-sm text-muted-foreground hover:bg-secondary disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            새로고침
+            <span className="hidden sm:inline">새로고침</span>
           </button>
           <button
             onClick={() => setMonth((m) => shiftMonth(m, -1))}
@@ -252,7 +275,7 @@ export default function ExpensesPage() {
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <span className="w-24 text-center text-lg font-medium">{formatMonth(month)}</span>
+          <span className="w-20 text-center text-base font-medium sm:w-24 sm:text-lg">{formatMonth(month)}</span>
           <button
             onClick={() => setMonth((m) => shiftMonth(m, 1))}
             disabled={isCurrentMonth}
@@ -264,14 +287,14 @@ export default function ExpensesPage() {
       </div>
 
       {/* Filter tabs */}
-      <div className="mb-6 flex items-center gap-2">
+      <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-1">
         {(['ALL', 'FIXED', 'VARIABLE', 'ETC'] as const).map((type) => (
           <button
             key={type}
             onClick={() => setFilterType(type)}
             className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
               filterType === type
-                ? 'bg-[#0A3D5C] text-white shadow-md'
+                ? 'bg-primary text-white shadow-md'
                 : 'bg-secondary text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -313,7 +336,7 @@ export default function ExpensesPage() {
                         <select
                           value={editCategoryId}
                           onChange={(e) => setEditCategoryId(Number(e.target.value))}
-                          className="rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-[#0A3D5C]"
+                          className="rounded-lg border border-border px-2 py-1 text-sm outline-none focus:border-primary"
                         >
                           {CATEGORIES.map((c) => (
                             <option key={c.id} value={c.id}>{c.name}</option>
@@ -322,7 +345,7 @@ export default function ExpensesPage() {
                         <button
                           onClick={saveCategory}
                           disabled={saving}
-                          className="rounded-lg bg-[#0A3D5C] px-3 py-1.5 text-sm text-white disabled:opacity-60"
+                          className="rounded-lg bg-primary px-3 py-1.5 text-sm text-white disabled:opacity-60"
                         >
                           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '저장'}
                         </button>
@@ -383,7 +406,7 @@ export default function ExpensesPage() {
                   onClick={() => setPage(n)}
                   className={`h-9 w-9 rounded-lg text-sm ${
                     n === page
-                      ? 'bg-[#0A3D5C] text-white'
+                      ? 'bg-primary text-white'
                       : 'text-foreground hover:bg-secondary'
                   }`}
                 >
