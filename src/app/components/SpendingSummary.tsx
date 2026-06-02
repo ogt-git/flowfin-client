@@ -14,7 +14,7 @@ export function SpendingSummary({ totalSpent, changePercent, isIncrease }: Spend
       <div className="absolute -bottom-12 -left-8 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
 
       <div className="relative z-10">
-        <p className="mb-2 opacity-90">이번 달 총 지출</p>
+        <p className="mb-2 opacity-90">최근 달 총 지출</p>
         <div className="mb-4 flex items-baseline gap-2">
           <h1
             className="text-5xl tracking-tight"
