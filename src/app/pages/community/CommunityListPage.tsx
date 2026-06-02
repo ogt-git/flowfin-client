@@ -6,6 +6,22 @@ import { fetchPosts, type Post } from '../../api/community';
 
 const CATEGORIES = ['전체', '소비절약', '투자', '카드/금융', '질문', '자유'];
 
+const CATEGORY_BAR: Record<string, string> = {
+  '소비절약': 'bg-emerald-400',
+  '투자':     'bg-blue-400',
+  '카드/금융': 'bg-purple-400',
+  '질문':     'bg-amber-400',
+  '자유':     'bg-slate-300',
+};
+
+const CATEGORY_BADGE: Record<string, string> = {
+  '소비절약': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  '투자':     'bg-blue-50 text-blue-700 border-blue-200',
+  '카드/금융': 'bg-purple-50 text-purple-700 border-purple-200',
+  '질문':     'bg-amber-50 text-amber-700 border-amber-200',
+  '자유':     'bg-slate-50 text-slate-600 border-slate-200',
+};
+
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
@@ -37,7 +53,7 @@ export default function CommunityListPage() {
 
   return (
       <div className="mx-auto max-w-4xl p-4 lg:p-8">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 style={{ fontFamily: 'var(--font-family-display)' }}>커뮤니티</h2>
             <p className="mt-1 text-sm text-muted-foreground">금융 정보를 나누고 함께 성장해요</p>
@@ -102,7 +118,7 @@ export default function CommunityListPage() {
             </div>
         ) : (
             <motion.div
-                className="space-y-3"
+                className="grid gap-4 sm:grid-cols-2"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -112,32 +128,35 @@ export default function CommunityListPage() {
                       key={post.id}
                       variants={itemVariants}
                       onClick={() => navigate(`/community/${post.id}`)}
-                      className="group cursor-pointer rounded-2xl border border-border bg-white p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                      className="group cursor-pointer overflow-hidden rounded-2xl border border-border bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="mb-2 flex items-center gap-2">
-                    <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs text-accent-foreground">
-                      {post.category}
-                    </span>
-                          <span className="text-xs text-muted-foreground">{post.createdAt}</span>
-                        </div>
-                        <h4 className="mb-1 truncate group-hover:text-primary">{post.title}</h4>
-                        <p className="text-sm text-muted-foreground line-clamp-1">{post.content}</p>
-                      </div>
-                    </div>
+                    {/* 카테고리 컬러 상단 바 */}
+                    <div className={`h-1 w-full ${CATEGORY_BAR[post.category] ?? 'bg-primary'}`} />
 
-                    <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>{post.author}</span>
-                      <span className="flex items-center gap-1">
-                  <Eye className="h-3.5 w-3.5" /> {post.views}
-                </span>
-                      <span className="flex items-center gap-1">
-                  <Heart className="h-3.5 w-3.5" /> {post.likeCount}
-                </span>
-                      <span className="flex items-center gap-1">
-                  <MessageCircle className="h-3.5 w-3.5" /> {post.commentCount}
-                </span>
+                    <div className="p-5">
+                      <div className="mb-3 flex items-center gap-2">
+                        <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${CATEGORY_BADGE[post.category] ?? 'bg-primary/10 text-primary border-primary/20'}`}>
+                          {post.category}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{post.createdAt}</span>
+                      </div>
+
+                      <h4 className="mb-1.5 line-clamp-2 font-semibold leading-snug transition-colors group-hover:text-primary">{post.title}</h4>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{post.content}</p>
+
+                      <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-success text-[10px] font-bold text-white">
+                            {post.author.charAt(0)}
+                          </div>
+                          <span className="text-xs font-medium">{post.author}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {post.views}</span>
+                          <span className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {post.likeCount}</span>
+                          <span className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" /> {post.commentCount}</span>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
               ))}

@@ -4,6 +4,22 @@ import { motion, type Variants} from 'motion/react';
 import { ArrowLeft, Eye, Heart, MessageCircle, Pencil, Trash2, X } from 'lucide-react';
 import { fetchPost, fetchComments, deletePost, toggleLike, createComment, deleteComment, type PostDetail, type Comment } from '../../api/community';
 
+const CATEGORY_BAR: Record<string, string> = {
+  '소비절약': 'bg-emerald-400',
+  '투자':     'bg-blue-400',
+  '카드/금융': 'bg-purple-400',
+  '질문':     'bg-amber-400',
+  '자유':     'bg-slate-300',
+};
+
+const CATEGORY_BADGE: Record<string, string> = {
+  '소비절약': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  '투자':     'bg-blue-50 text-blue-700 border-blue-200',
+  '카드/금융': 'bg-purple-50 text-purple-700 border-purple-200',
+  '질문':     'bg-amber-50 text-amber-700 border-amber-200',
+  '자유':     'bg-slate-50 text-slate-600 border-slate-200',
+};
+
 export default function CommunityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -115,11 +131,15 @@ export default function CommunityDetailPage() {
         </button>
 
         {/* 게시글 */}
-        <div className="rounded-2xl border border-border bg-white p-5 sm:p-8">
+        <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+          {/* 카테고리 컬러 상단 바 */}
+          <div className={`h-1.5 w-full ${CATEGORY_BAR[post.category] ?? 'bg-primary'}`} />
+
           {/* 헤더 */}
+          <div className="p-5 sm:p-8">
           <div className="mb-6 border-b border-border pb-6">
             <div className="mb-3 flex items-center gap-2">
-              <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs text-accent-foreground">
+              <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${CATEGORY_BADGE[post.category] ?? 'bg-primary/10 text-primary border-primary/20'}`}>
                 {post.category}
               </span>
               <span className="text-xs text-muted-foreground">{post.createdAt}</span>
@@ -146,8 +166,13 @@ export default function CommunityDetailPage() {
               )}
             </div>
 
-            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">{post.author}</span>
+            <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-success text-[10px] font-bold text-white">
+                  {post.author.charAt(0)}
+                </div>
+                <span className="font-medium text-foreground">{post.author}</span>
+              </div>
               <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {post.views}</span>
               <button
                 onClick={handleLike}
@@ -163,40 +188,45 @@ export default function CommunityDetailPage() {
           <div className="text-foreground leading-relaxed whitespace-pre-wrap">
             {post.content}
           </div>
+          </div>{/* p-5 sm:p-8 닫기 */}
         </div>
 
         {/* 댓글 */}
-        <div className="mt-6 rounded-2xl border border-border bg-white p-6">
-          <h4 className="mb-4">댓글 {post.comments.length}개</h4>
-          <div className="space-y-4">
-            {post.comments.map((comment: Comment) => (
-              <div key={comment.id} className="flex gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium">
-                  {comment.author.charAt(0)}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{comment.author}</span>
-                      <span className="text-xs text-muted-foreground">{comment.createdAt}</span>
-                    </div>
-                    {comment.author === currentUser && (
-                      <button
-                        onClick={() => handleCommentDelete(comment.id)}
-                        className="text-xs text-muted-foreground hover:text-red-500 transition-colors"
-                      >
-                        삭제
-                      </button>
-                    )}
-                  </div>
-                  <p className="text-sm text-foreground">{comment.content}</p>
-                </div>
-              </div>
-            ))}
+        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+          <div className="border-b border-border px-6 py-4">
+            <h4>댓글 {post.comments.length}개</h4>
           </div>
+          {post.comments.length > 0 && (
+            <div className="space-y-4 px-6 pt-5">
+              {post.comments.map((comment: Comment) => (
+                <div key={comment.id} className="flex gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-secondary to-muted text-xs font-semibold text-muted-foreground">
+                    {comment.author.charAt(0)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{comment.author}</span>
+                        <span className="text-xs text-muted-foreground">{comment.createdAt}</span>
+                      </div>
+                      {comment.author === currentUser && (
+                        <button
+                          onClick={() => handleCommentDelete(comment.id)}
+                          className="text-xs text-muted-foreground hover:text-red-500 transition-colors"
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground">{comment.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* 댓글 입력 */}
-          <div className="mt-5 flex gap-3 border-t border-border pt-5">
+          <div className={`flex gap-3 p-6 ${post.comments.length > 0 ? 'border-t border-border' : ''}`}>
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-success text-xs text-white">
               {currentUser.charAt(0) || 'U'}
             </div>
