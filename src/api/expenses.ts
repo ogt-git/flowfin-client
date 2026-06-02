@@ -36,7 +36,8 @@ export async function deleteExpense(id: number): Promise<void> {
   await api.delete(`/api/expenses/delete/${id}`);
 }
 
-export async function fetchMonthlyStats(month: string): Promise<MonthlyStats> {
-  const res = await api.get<ApiResponse<MonthlyStats>>('/api/expenses/stats', { params: { month: toApiMonth(month) } });
+export async function fetchMonthlyStats(month?: string): Promise<MonthlyStats> {
+  const params = month ? { month: toApiMonth(month) } : {};
+  const res = await api.get<ApiResponse<MonthlyStats>>('/api/expenses/stats', { params });
   return res.data.data;
 }

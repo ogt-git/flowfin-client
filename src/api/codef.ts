@@ -36,17 +36,13 @@ export async function connectAccount(form: CodefConnectRequest): Promise<string>
 }
 
 // 카드 지출 내역 동기화 — POST /api/codef/sync/card
-export async function syncCard(userId: number): Promise<ApiResponse<CodefSyncResult>> {
-  const res = await api.post<ApiResponse<CodefSyncResult>>('/api/codef/sync/card', null, {
-    headers: { 'X-User-Id': String(userId) },
-  });
-  return res.data;
+export async function syncCard(): Promise<CodefSyncResult> {
+  const res = await api.post<ApiResponse<CodefSyncResult>>('/api/codef/sync/card');
+  return res.data.data;
 }
 
 // 증권 종합자산 동기화 — POST /api/codef/sync/stock
-export async function syncStock(userId: number): Promise<ApiResponse<CodefSyncResult>> {
-  const res = await api.post<ApiResponse<CodefSyncResult>>('/api/codef/sync/stock', null, {
-    headers: { 'X-User-Id': String(userId) },
-  });
-  return res.data;
+export async function syncStock(): Promise<CodefSyncResult> {
+  const res = await api.post<ApiResponse<CodefSyncResult>>('/api/codef/sync/stock');
+  return res.data.data;
 }

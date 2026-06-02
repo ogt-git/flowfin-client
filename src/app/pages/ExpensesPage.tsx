@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Pencil, Trash2, Loader2, RefreshCw } from 'l
 import { toast } from 'sonner';
 import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
 import { fetchExpenses, updateExpenseCategory, deleteExpense, fetchMonthlyStats } from '../../api/expenses';
+import { syncCard } from '../../api/codef';
 import type { Expense, CategoryType, MonthlyStats } from '../../types/expense';
 
 Chart.register(ArcElement, DoughnutController, Tooltip);
@@ -140,8 +141,21 @@ export default function ExpensesPage() {
 
   async function reload() {
     setRefreshing(true);
-    await Promise.all([loadExpenses(), fetchMonthlyStats(month).then(setStats).catch(() => {})]);
-    setRefreshing(false);
+    try {
+      const result = await syncCard();
+      const msg = result?.savedCount === 0 ? '새로운 카드 내역이 없습니다.' : `카드 내역 ${result?.savedCount}건이 동기화되었습니다.`;
+      toast.success(msg);
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number; data?: { message?: string } } })?.response?.status;
+      if (status === 429) {
+        toast.error('5분에 한 번만 새로고침할 수 있습니다.');
+      } else {
+        toast.error('카드 동기화에 실패했습니다.');
+      }
+    } finally {
+      await Promise.all([loadExpenses(), fetchMonthlyStats(month).then(setStats).catch(() => {})]);
+      setRefreshing(false);
+    }
   }
 
   useEffect(() => { setPage(0); }, [month, filterType]);
@@ -400,7 +414,8 @@ export default function ExpensesPage() {
           </div>
           <div className="mt-3 flex flex-col gap-1.5">
             {chartLabels.map((lbl, i) => {
-              const pct = chartTotal > 0 ? Math.round((chartValues[i] / chartTotal) * 100) : 0;
+              const positiveTotal = chartValues.reduce((sum, v) => sum + Math.max(0, v), 0);
+              const pct = positiveTotal > 0 ? Math.round(Math.max(0, chartValues[i]) / positiveTotal * 100) : 0;
               return (
                 <div key={lbl} className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="flex items-center gap-1.5">
