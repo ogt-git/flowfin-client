@@ -6,6 +6,14 @@ import { fetchPost, createPost, updatePost, type PostPayload } from '../../api/c
 
 const CATEGORIES = ['소비절약', '투자', '카드/금융', '질문', '자유'];
 
+const CATEGORY_BADGE: Record<string, string> = {
+  '소비절약': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  '투자':     'bg-blue-50 text-blue-700 border-blue-200',
+  '카드/금융': 'bg-purple-50 text-purple-700 border-purple-200',
+  '질문':     'bg-amber-50 text-amber-700 border-amber-200',
+  '자유':     'bg-slate-50 text-slate-600 border-slate-200',
+};
+
 export default function CommunityFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -96,10 +104,10 @@ export default function CommunityFormPage() {
                 key={cat}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, category: cat }))}
-                className={`rounded-full px-4 py-1.5 text-sm transition-all ${
+                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
                   form.category === cat
-                    ? 'bg-primary text-white shadow-md'
-                    : 'border border-border bg-white text-muted-foreground hover:border-primary hover:text-primary'
+                    ? CATEGORY_BADGE[cat] + ' shadow-sm'
+                    : 'border-border bg-white text-muted-foreground hover:border-primary hover:text-primary'
                 }`}
               >
                 {cat}
