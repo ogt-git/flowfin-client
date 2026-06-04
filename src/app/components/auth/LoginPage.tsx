@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { login } from '../../../api/auth';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 interface FieldErrors {
   email?: string;
@@ -28,6 +29,7 @@ export default function LoginPage({
   const [touched, setTouched] = useState({ email: false, password: false });
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
 
   const handleChange = (field: 'email' | 'password', value: string) => {
     setForm(f => ({ ...f, [field]: value }));
@@ -80,6 +82,7 @@ export default function LoginPage({
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
+      {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} initialEmail={form.email} />}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -120,6 +123,16 @@ export default function LoginPage({
             {touched.password && errors.password && (
               <p className="mt-1 text-xs text-destructive">{errors.password}</p>
             )}
+            <p className="mt-1 text-xs text-muted-foreground">
+              비밀번호를 잊으셨나요?{' '}
+              <button
+                type="button"
+                onClick={() => setShowForgot(true)}
+                className="text-[11px] text-primary hover:underline"
+              >
+                비밀번호 찾기
+              </button>
+            </p>
           </div>
 
           {submitError && <p className="text-sm text-destructive">{submitError}</p>}
