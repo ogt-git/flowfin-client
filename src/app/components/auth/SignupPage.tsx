@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import React from 'react';
 import { motion } from 'motion/react';
-import { signup } from '../../../api/auth';
+import { signup, requestEmailVerify, confirmEmailVerify } from '../../../api/auth';
 import { TermsModal } from '../common/TermsModal';
 import { ServiceTermsPage } from '../../pages/terms/ServiceTermsPage';
 import { PrivacyPolicyPage } from '../../pages/terms/PrivacyPolicyPage';
@@ -85,6 +85,16 @@ export default function SignupPage({
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // 이메일 인증
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [sendLoading, setSendLoading] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
+  const [cooldown, setCooldown] = useState(0);
+
   const [terms, setTerms] = useState<TermsState>({ service: false, privacy: false, thirdParty: false });
   const [openModal, setOpenModal] = useState<TermsKey | null>(null);
 
@@ -108,8 +118,64 @@ export default function SignupPage({
     }
   };
 
+  const startCooldown = () => {
+    setCooldown(180);
+    const timer = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) { clearInterval(timer); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendOtp = async () => {
+    const err = validateEmail(form.email);
+    setErrors(e => ({ ...e, email: err }));
+    setTouched(t => ({ ...t, email: true }));
+    if (err) return;
+
+    setSendLoading(true);
+    try {
+      await requestEmailVerify(form.email);
+      setOtpSent(true);
+      setOtpError('');
+      startCooldown();
+    } catch (e: any) {
+      const status = e?.response?.status;
+      if (status === 409) setErrors(ev => ({ ...ev, email: '이미 사용 중인 이메일입니다.' }));
+      else if (status === 429) setErrors(ev => ({ ...ev, email: '잠시 후 다시 시도해주세요. (3분 제한)' }));
+      else setErrors(ev => ({ ...ev, email: '인증코드 발송에 실패했습니다.' }));
+    } finally {
+      setSendLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length !== 6) { setOtpError('6자리 인증코드를 입력해주세요.'); return; }
+    setOtpLoading(true);
+    setOtpError('');
+    try {
+      const token = await confirmEmailVerify(form.email, otp);
+      setVerificationToken(token);
+      setEmailVerified(true);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message;
+      if (e?.response?.status === 400) setOtpError('인증코드가 올바르지 않습니다.');
+      else setOtpError(msg ?? '인증에 실패했습니다.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   const handleChange = (field: keyof FormState, value: string) => {
     setForm(f => ({ ...f, [field]: value }));
+    if (field === 'email') {
+      setEmailVerified(false);
+      setVerificationToken('');
+      setOtpSent(false);
+      setOtp('');
+      setOtpError('');
+    }
     if (touched[field]) {
       setErrors(e => ({ ...e, [field]: validate(field, value) }));
     }
@@ -135,12 +201,13 @@ export default function SignupPage({
     setErrors(newErrors);
 
     if (Object.values(newErrors).some(Boolean)) return;
+    if (!emailVerified) { setSubmitError('이메일 인증을 완료해주세요.'); return; }
     if (!allChecked) return;
 
     setLoading(true);
     setSubmitError('');
     try {
-      await signup({ name: form.name, email: form.email, password: form.password, termsVersion: '1.0' });
+      await signup({ name: form.name, email: form.email, password: form.password, termsVersion: '1.0', verificationToken });
       await onSignupSuccess(form.email, form.password);
     } catch (e: any) {
       const msg = e?.response?.data?.message ?? e?.message ?? '회원가입에 실패했습니다.';
@@ -189,19 +256,59 @@ export default function SignupPage({
 
           <div>
             <label className="mb-1 block text-sm">이메일</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={e => handleChange('email', e.target.value)}
-              onBlur={() => handleBlur('email')}
-              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-              placeholder="example@email.com"
-              maxLength={50}
-              className={inputClass('email')}
-            />
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => handleChange('email', e.target.value)}
+                onBlur={() => handleBlur('email')}
+                placeholder="example@email.com"
+                maxLength={50}
+                disabled={emailVerified}
+                className={`flex-1 rounded-xl border bg-input-background px-4 py-3 outline-none transition-colors focus:border-primary disabled:opacity-60 ${
+                  touched.email && errors.email ? 'border-destructive' : 'border-border'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={emailVerified ? undefined : (otpSent && cooldown > 0 ? undefined : handleSendOtp)}
+                disabled={emailVerified || sendLoading || (otpSent && cooldown > 0)}
+                className="shrink-0 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {sendLoading ? '발송 중...' : otpSent && cooldown > 0 ? `재발송 (${cooldown}s)` : otpSent ? '재발송' : '인증코드 발송'}
+              </button>
+            </div>
             {touched.email && errors.email && (
               <p className="mt-1 text-xs text-destructive">{errors.email}</p>
             )}
+            {emailVerified && (
+              <p className="mt-1 text-xs text-emerald-600">✓ 이메일 인증 완료</p>
+            )}
+            {otpSent && !emailVerified && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={otp}
+                  onChange={e => { setOtp(e.target.value.replace(/\D/g, '')); setOtpError(''); }}
+                  onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()}
+                  placeholder="인증코드 6자리"
+                  className={`flex-1 rounded-xl border bg-input-background px-4 py-3 text-center tracking-widest outline-none transition-colors focus:border-primary ${
+                    otpError ? 'border-destructive' : 'border-border'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={handleVerifyOtp}
+                  disabled={otpLoading}
+                  className="shrink-0 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  {otpLoading ? '확인 중...' : '확인'}
+                </button>
+              </div>
+            )}
+            {otpError && <p className="mt-1 text-xs text-destructive">{otpError}</p>}
           </div>
 
           <div>
