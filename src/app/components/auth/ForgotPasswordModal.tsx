@@ -41,7 +41,7 @@ export default function ForgotPasswordModal({ onClose, initialEmail = '' }: Prop
   const [confirmError2, setConfirmError2] = useState('');
 
   const startCooldown = () => {
-    setCooldown(180);
+    setCooldown(15);
     const timer = setInterval(() => {
       setCooldown(prev => {
         if (prev <= 1) { clearInterval(timer); return 0; }
@@ -66,7 +66,7 @@ export default function ForgotPasswordModal({ onClose, initialEmail = '' }: Prop
       if (e?.response?.status === 404) {
         setSendError('등록되지 않은 이메일입니다.');
       } else if (e?.response?.status === 429) {
-        setSendError('잠시 후 다시 시도해주세요. (1분 제한)');
+        setSendError('잠시 후 다시 시도해주세요. (15초 제한)');
       } else {
         setSendError(msg ?? '인증코드 발송에 실패했습니다.');
       }
@@ -84,7 +84,7 @@ export default function ForgotPasswordModal({ onClose, initialEmail = '' }: Prop
       startCooldown();
     } catch (e: any) {
       if (e?.response?.status === 429) {
-        setSendError('잠시 후 다시 시도해주세요. (1분 제한)');
+        setSendError('잠시 후 다시 시도해주세요. (15초 제한)');
       } else {
         setSendError('재발송에 실패했습니다.');
       }

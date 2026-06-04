@@ -119,7 +119,7 @@ export default function SignupPage({
   };
 
   const startCooldown = () => {
-    setCooldown(180);
+    setCooldown(15);
     const timer = setInterval(() => {
       setCooldown(prev => {
         if (prev <= 1) { clearInterval(timer); return 0; }
@@ -143,7 +143,7 @@ export default function SignupPage({
     } catch (e: any) {
       const status = e?.response?.status;
       if (status === 409) setErrors(ev => ({ ...ev, email: '이미 사용 중인 이메일입니다.' }));
-      else if (status === 429) setErrors(ev => ({ ...ev, email: '잠시 후 다시 시도해주세요. (3분 제한)' }));
+      else if (status === 429) setErrors(ev => ({ ...ev, email: '잠시 후 다시 시도해주세요. (15초 제한)' }));
       else setErrors(ev => ({ ...ev, email: '인증코드 발송에 실패했습니다.' }));
     } finally {
       setSendLoading(false);
