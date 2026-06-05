@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router';
 import LoginPage from './components/auth/LoginPage';
 import SignupPage from './components/auth/SignupPage';
@@ -37,6 +37,17 @@ export default function App() {
   const [needsTendencyTest, setNeedsTendencyTest] = useState(
     () => !!localStorage.getItem('token') && !localStorage.getItem('riskType'),
   );
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (!isLoggedIn && authPage === 'signup') {
+        sessionStorage.setItem('authPage', 'login');
+        setAuthPage('login');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isLoggedIn, authPage]);
 
   const applyLoginData = (data: { accessToken: string; name: string; userId: number; email: string; riskType: string | null }) => {
     localStorage.setItem('token', data.accessToken);
@@ -88,7 +99,10 @@ export default function App() {
     }
     return (
       <LoginPage
-        onNavigateToSignup={() => setAuthPagePersisted('signup')}
+        onNavigateToSignup={() => {
+          setAuthPagePersisted('signup');
+          window.history.pushState({ authPage: 'signup' }, '');
+        }}
         onLoginSuccess={handleLoginSuccess}
       />
     );
