@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router';
 import LoginPage from './components/auth/LoginPage';
 import SignupPage from './components/auth/SignupPage';
@@ -19,6 +19,7 @@ import { PrivacyPolicyPage } from './pages/terms/PrivacyPolicyPage';
 import { ThirdPartyConsentPage } from './pages/terms/ThirdPartyConsentPage';
 import { Toaster } from './components/ui/sonner';
 import { login, type RiskType } from '../api/auth';
+import http, { setAccessToken } from '../api/http';
 
 type AuthPage = 'login' | 'signup';
 
@@ -32,14 +33,34 @@ export default function App() {
     sessionStorage.setItem('authPage', page);
     setAuthPage(page);
   };
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('token'));
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState(() => localStorage.getItem('name') || '');
-  const [needsTendencyTest, setNeedsTendencyTest] = useState(
-    () => !!localStorage.getItem('token') && !localStorage.getItem('riskType'),
-  );
+  const [needsTendencyTest, setNeedsTendencyTest] = useState(false);
+
+  useEffect(() => {
+    // 새로고침 시 httpOnly 쿠키로 Access Token 복구
+    if (!localStorage.getItem('userId')) {
+      setIsInitializing(false);
+      return;
+    }
+    http.post<{ accessToken: string }>('/api/auth/refresh')
+      .then((res) => {
+        setAccessToken(res.data.accessToken);
+        setIsLoggedIn(true);
+        setNeedsTendencyTest(!localStorage.getItem('riskType'));
+      })
+      .catch(() => {
+        localStorage.removeItem('name');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('email');
+        localStorage.removeItem('riskType');
+      })
+      .finally(() => setIsInitializing(false));
+  }, []);
 
   const applyLoginData = (data: { accessToken: string; name: string; userId: number; email: string; riskType: string | null }) => {
-    localStorage.setItem('token', data.accessToken);
+    setAccessToken(data.accessToken);
     localStorage.setItem('name', data.name);
     localStorage.setItem('userId', String(data.userId));
     localStorage.setItem('email', data.email);
@@ -66,7 +87,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    setAccessToken(null);
     localStorage.removeItem('name');
     localStorage.removeItem('userId');
     localStorage.removeItem('email');
@@ -76,6 +97,8 @@ export default function App() {
     setNeedsTendencyTest(false);
     setAuthPagePersisted('login');
   };
+
+  if (isInitializing) return null;
 
   if (!isLoggedIn) {
     if (authPage === 'signup') {
