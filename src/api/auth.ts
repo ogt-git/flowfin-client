@@ -20,6 +20,10 @@ export interface LoginResult {
   riskType: string | null;
 }
 
+export interface RefreshResult {
+  accessToken: string;
+}
+
 export type RiskType =
   | 'CONSERVATIVE'
   | 'MODERATELY_CONSERVATIVE'
