@@ -1,0 +1,10 @@
+﻿node_modules/
+dist/
+.env
+.env.*
+*.local
+docker-compose.yml
+src/main/resources/application.properties
+.claude/
+.vite/
+*.log

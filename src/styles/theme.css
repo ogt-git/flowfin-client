@@ -2,8 +2,8 @@
 
 :root {
   --font-size: 16px;
-  --font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-  --font-family-display: 'Outfit', 'DM Sans', system-ui, sans-serif;
+  --font-family: 'DM Sans', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  --font-family-display: 'Outfit', 'DM Sans', 'Noto Sans KR', system-ui, sans-serif;
 
   --background: #FAFBFC;
   --foreground: #1A1D29;
@@ -13,6 +13,7 @@
   --popover-foreground: #1A1D29;
 
   --primary: #0A3D5C;
+  --primary-dark: #0F4C81;
   --primary-foreground: #ffffff;
   --secondary: #F0F4F8;
   --secondary-foreground: #1A1D29;
@@ -100,6 +101,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -114,6 +116,9 @@
   --color-input-background: var(--input-background);
   --color-switch-background: var(--switch-background);
   --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-light: var(--success-light);
+  --color-success-foreground: var(--success-foreground);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
