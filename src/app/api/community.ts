@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8080/api/community';
+import http from '@/api/http';
 
 export interface Post {
   id: number;
@@ -30,84 +30,58 @@ export interface PostPayload {
   category: string;
 }
 
-// ── API 공통 fetch ─────────────────────────────────────────────────────────
-async function apiFetch(url: string, options?: RequestInit) {
-  const token = localStorage.getItem('token');
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
-  });
-  if (!res.ok) {
-    const error = await res.text();
-    throw new Error(error || '요청에 실패했습니다.');
-  }
-  // 204 No Content면 json 파싱 안 함
-  if (res.status === 204) return;
-  return res.json();
-}
-
 // ── API 함수 ───────────────────────────────────────────────────────────────
 
 /** 목록 조회 */
 export async function fetchPosts(category?: string, keyword?: string): Promise<Post[]> {
-  const params = new URLSearchParams();
-  if (category && category !== '전체') params.append('category', category);
-  if (keyword) params.append('keyword', keyword);
-  const query = params.toString() ? `?${params.toString()}` : '';
-  return apiFetch(`${BASE_URL}${query}`);
+  const params: Record<string, string> = {};
+  if (category && category !== '전체') params.category = category;
+  if (keyword) params.keyword = keyword;
+  const res = await http.get<Post[]>('/api/community', { params });
+  return res.data;
 }
 
 /** 단건 조회 */
 export async function fetchPost(id: number): Promise<PostDetail> {
-  return apiFetch(`${BASE_URL}/${id}`);
+  const res = await http.get<PostDetail>(`/api/community/${id}`);
+  return res.data;
 }
 
 /** 게시글 작성 */
 export async function createPost(payload: PostPayload): Promise<Post> {
-  return apiFetch(BASE_URL, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  const res = await http.post<Post>('/api/community', payload);
+  return res.data;
 }
 
 /** 게시글 수정 */
 export async function updatePost(id: number, payload: PostPayload): Promise<Post> {
-  return apiFetch(`${BASE_URL}/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  });
+  const res = await http.put<Post>(`/api/community/${id}`, payload);
+  return res.data;
 }
 
 /** 게시글 삭제 */
 export async function deletePost(id: number): Promise<void> {
-  return apiFetch(`${BASE_URL}/${id}`, {
-    method: 'DELETE',
-  });
+  await http.delete(`/api/community/${id}`);
 }
 
 /** 좋아요 토글 */
 export async function toggleLike(id: number): Promise<void> {
-  return apiFetch(`${BASE_URL}/like/${id}`, { method: 'POST' });
+  await http.post(`/api/community/like/${id}`);
 }
 
 /** 댓글 목록 조회 */
 export async function fetchComments(postId: number): Promise<Comment[]> {
-  return apiFetch(`${BASE_URL}/${postId}/comments`);
+  const res = await http.get<Comment[]>(`/api/community/${postId}/comments`);
+  return res.data;
 }
 
 /** 댓글 등록 */
 export async function createComment(postId: number, content: string): Promise<Comment> {
-  return apiFetch(`${BASE_URL}/${postId}/comments`, {
-    method: 'POST',
-    body: JSON.stringify({ content }),
-  });
+  const res = await http.post<Comment>(`/api/community/${postId}/comments`, { content });
+  return res.data;
 }
 
 /** 댓글 삭제 */
 export async function deleteComment(postId: number, commentId: number): Promise<void> {
-  return apiFetch(`${BASE_URL}/${postId}/comments/${commentId}`, { method: 'DELETE' });
+  await http.delete(`/api/community/${postId}/comments/${commentId}`);
 }
