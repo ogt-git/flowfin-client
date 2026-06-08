@@ -8,7 +8,7 @@ export function setAccessToken(token: string | null) {
 }
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL as string,
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json;charset=UTF-8',

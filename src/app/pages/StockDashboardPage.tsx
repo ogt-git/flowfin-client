@@ -297,7 +297,7 @@ export default function StockDashboardPage() {
               <div className="grid grid-cols-3 divide-x divide-white/20">
                 {[
                   { label: '예수금',    val: assetSummary.depositReceived     },
-                  { label: '증권',      val: assetSummary.totalStockAsset     },
+                  { label: '증권 자산',      val: assetSummary.totalStockAsset     },
                   { label: '수동 자산', val: assetSummary.totalManualAsset    },
                 ].map((item) => (
                   <div key={item.label} className="px-4 first:pl-0 last:pr-0">
