@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { motion, type Variants } from 'motion/react';
 import {
   TrendingUp, TrendingDown, RefreshCw, PlusCircle, Loader2, Trash2,
@@ -171,8 +171,27 @@ function buildChartData(items: StockItem[]) {
 }
 
 // ── 메인 컴포넌트 ──────────────────────────────────────────
+const STOCK_SYNC_KEY = 'flowfin_stock_syncing';
+
 export default function StockDashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const justLinked = !!(location.state as { justLinked?: boolean } | null)?.justLinked;
+
+  const STOCK_PROGRESS_KEY = STOCK_SYNC_KEY + '_progress';
+  const [syncProgress, setSyncProgress] = useState(() => {
+    if (justLinked) return 0;
+    return parseInt(sessionStorage.getItem(STOCK_SYNC_KEY + '_progress') ?? '0', 10);
+  });
+  const [stockSyncing, setStockSyncing] = useState(() => {
+    if (justLinked) { sessionStorage.setItem(STOCK_SYNC_KEY, 'true'); return true; }
+    return sessionStorage.getItem(STOCK_SYNC_KEY) === 'true';
+  });
+  const syncPhase = syncProgress < 30 ? '증권 데이터를 수집하는 중...'
+                  : syncProgress < 70 ? '종목 정보를 불러오는 중...'
+                  : syncProgress < 95 ? '보유 종목을 정리하는 중...'
+                  : '거의 다 됐어요!';
+
   const [assetSummary, setAssetSummary]   = useState<AssetSummaryData | null>(null);
   const [stocks, setStocks]               = useState<StockAccount[]>([]);
   const [manualAssets, setManualAssets]   = useState<ManualAssetItem[]>([]);
@@ -197,6 +216,7 @@ export default function StockDashboardPage() {
     try {
       await deleteManualAsset(id);
       setManualAssets((prev) => prev.filter((a) => a.id !== id));
+      fetchAssetSummary().then(setAssetSummary).catch(() => {});
     } catch { /* no-op */ }
   }
 
@@ -214,7 +234,94 @@ export default function StockDashboardPage() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (!stockSyncing) load(); }, [stockSyncing]);
+
+  useEffect(() => {
+    if (!stockSyncing) return;
+
+    const MAX_WAIT = 120_000;
+    const POLL_INTERVAL = 4_000;
+    const MIN_DISPLAY = 3_000;
+    const startTime = Date.now();
+    let stopped = false;
+    let emptyCount = 0;
+    let isComplete = false;
+    let progress = parseInt(sessionStorage.getItem(STOCK_PROGRESS_KEY) ?? '0', 10);
+    let tickTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const tick = () => {
+      if (stopped) return;
+
+      if (isComplete && progress >= 95) {
+        progress = Math.min(progress + 3, 100);
+      } else {
+        const increment = Math.max(0.3, (95 - progress) * 0.025);
+        progress = Math.min(progress + increment, 95);
+      }
+
+      const rounded = Math.round(progress);
+      setSyncProgress(rounded);
+      sessionStorage.setItem(STOCK_PROGRESS_KEY, String(rounded));
+
+      if (rounded >= 100) {
+        // poll에서 이미 데이터를 state에 넣어뒀으므로 바로 화면 전환
+        const elapsed = Date.now() - startTime;
+        const delay = Math.max(0, MIN_DISPLAY - elapsed) + 400;
+        setTimeout(() => {
+          if (!stopped) {
+            stopped = true;
+            sessionStorage.removeItem(STOCK_SYNC_KEY);
+            sessionStorage.removeItem(STOCK_PROGRESS_KEY);
+            setStockSyncing(false);
+          }
+        }, delay);
+      } else {
+        tickTimer = setTimeout(tick, 100);
+      }
+    };
+
+    tickTimer = setTimeout(tick, 100);
+
+    async function poll() {
+      if (stopped) return;
+      try {
+        const result = await fetchStocks();
+        if (result.length > 0) {
+          // 데이터 준비 완료 → 나머지 데이터도 함께 로드 후 state 설정
+          const [summaryResult, manualResult] = await Promise.allSettled([
+            fetchAssetSummary(), fetchManualAssets(),
+          ]);
+          if (summaryResult.status === 'fulfilled') setAssetSummary(summaryResult.value);
+          setStocks(result);
+          setStockError(false);
+          if (manualResult.status === 'fulfilled') setManualAssets(manualResult.value);
+          isComplete = true;
+          return;
+        } else {
+          emptyCount++;
+          if (emptyCount >= 3) { isComplete = true; return; }
+        }
+      } catch { /* silent */ }
+
+      if (Date.now() - startTime >= MAX_WAIT) {
+        stopped = true;
+        if (tickTimer) clearTimeout(tickTimer);
+        sessionStorage.removeItem(STOCK_SYNC_KEY);
+        sessionStorage.removeItem(STOCK_PROGRESS_KEY);
+        setStockSyncing(false);
+        return;
+      }
+      setTimeout(poll, POLL_INTERVAL);
+    }
+
+    poll();
+
+    return () => {
+      stopped = true;
+      if (tickTimer) clearTimeout(tickTimer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const autoRefresh = useCallback(async () => {
     if (syncing) return;
@@ -242,6 +349,53 @@ export default function StockDashboardPage() {
   const totalStockAsset   = assetSummary
     ? assetSummary.totalStockAsset + assetSummary.totalManualAsset + assetSummary.depositReceived
     : 0;
+
+  if (stockSyncing) {
+    const steps = ['증권 데이터 수집', '종목 정보 불러오기', '보유 종목 정리', '완료'];
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-4 lg:p-8">
+        <div className="w-full max-w-sm rounded-2xl border border-border bg-white p-8 shadow-sm">
+          <div className="mb-6 flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+          </div>
+          <p className="mb-1 text-center text-base font-semibold">{syncPhase}</p>
+          <p className="mb-6 text-center text-xs text-muted-foreground">페이지를 닫지 마세요. 곧 증권 현황이 표시됩니다.</p>
+
+          <div className="mb-2 flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">진행률</span>
+            <span className="font-semibold text-primary">{syncProgress}%</span>
+          </div>
+          <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-secondary">
+            <div
+              className="h-2 rounded-full bg-primary transition-[width] duration-200"
+              style={{ width: `${syncProgress}%` }}
+            />
+          </div>
+
+          <div className="space-y-2.5">
+            {steps.map((label, i) => {
+              const threshold = i * 25;
+              const done   = syncProgress >= threshold + 25;
+              const active = syncProgress >= threshold && !done;
+              return (
+                <div key={i} className="flex items-center gap-2.5 text-sm">
+                  <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold
+                    ${done ? 'bg-primary text-white' : active ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+                    {done ? '✓' : i + 1}
+                  </span>
+                  <span className={done ? 'text-foreground' : active ? 'font-medium text-primary' : 'text-muted-foreground'}>
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
