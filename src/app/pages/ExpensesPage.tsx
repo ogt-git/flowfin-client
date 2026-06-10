@@ -431,11 +431,6 @@ export default function ExpensesPage() {
           {/* 도넛 차트 */}
           <div className="relative mt-4 h-[160px] w-full">
             <canvas ref={canvasRef} role="img" aria-label="지출 비율 차트" />
-            {/* 중앙 레이블 */}
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-[10px] text-muted-foreground">항목</p>
-              <p className="text-sm font-bold">{chartLabels.length}개</p>
-            </div>
           </div>
 
           {/* 범례 */}

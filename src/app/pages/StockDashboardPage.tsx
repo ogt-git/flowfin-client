@@ -292,12 +292,12 @@ export default function StockDashboardPage() {
             <div className="relative z-10">
               <p className="mb-1 text-sm text-white/70">전체 자산 총합</p>
               <p className="mb-5 text-4xl font-bold tracking-tight lg:text-5xl" style={{ fontFamily: 'var(--font-family-display)' }}>
-                {formatAmount(totalStockAsset)}<span className="ml-1 text-2xl font-medium opacity-80">원</span>
+                {formatAmount(totalStockAsset)}원
               </p>
               <div className="grid grid-cols-3 divide-x divide-white/20">
                 {[
                   { label: '예수금',    val: assetSummary.depositReceived     },
-                  { label: '증권',      val: assetSummary.totalStockAsset     },
+                  { label: '증권 자산',      val: assetSummary.totalStockAsset     },
                   { label: '수동 자산', val: assetSummary.totalManualAsset    },
                 ].map((item) => (
                   <div key={item.label} className="px-4 first:pl-0 last:pr-0">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router';
-import { Home, PieChart, PlusCircle, TrendingUp, LayoutGrid, Users, User, LogOut, Bell, BarChart2, Menu, X } from 'lucide-react';
+import { Home, PieChart, PlusCircle, TrendingUp, LayoutGrid, Users, User, LogOut, BarChart2, Menu, X } from 'lucide-react';
 import { BottomNav } from '../BottomNav';
 
 interface DashboardLayoutProps {
@@ -124,10 +124,6 @@ export default function DashboardLayout({ userName, onLogout }: DashboardLayoutP
               </div>
             </div>
             <div className="flex items-center gap-2 lg:gap-3">
-              <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-white transition-colors hover:bg-secondary lg:h-11 lg:w-11">
-                <Bell className="h-4 w-4 text-muted-foreground lg:h-5 lg:w-5" />
-                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-success lg:h-2 lg:w-2 lg:right-2.5 lg:top-2.5" />
-              </button>
               <button
                 onClick={() => navigate('/mypage')}
                 className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-success text-white shadow-md transition-opacity hover:opacity-80 lg:h-11 lg:w-11"
