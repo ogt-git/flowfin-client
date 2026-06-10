@@ -1,5 +1,13 @@
+import axios from 'axios';
 import http from './http';
 import type { CodefConnectRequest, ApiResponse, CodefSyncResult, CodefConnection } from '../types/codef';
+
+export function extractCodefErrorCode(error: unknown): string | null {
+  if (axios.isAxiosError(error)) {
+    return error.response?.data?.errorCode ?? null;
+  }
+  return null;
+}
 
 const api = http;
 
