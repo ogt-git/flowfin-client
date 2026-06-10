@@ -123,16 +123,15 @@ export default function DashboardPage({ userName: _userName }: DashboardPageProp
                 <TrendingUp className="h-4 w-4" />
                 <p>전체 자산</p>
               </div>
-              <div className="mb-4 flex items-baseline gap-2">
+              <div className="mb-4">
                 <h1
                   className="text-5xl tracking-tight"
                   style={{ fontFamily: 'var(--font-family-display)' }}
                 >
                   {assetSummary
                     ? formatAmount(assetSummary.totalStockAsset + assetSummary.totalManualAsset + assetSummary.depositReceived)
-                    : '-'}
+                    : '-'}원
                 </h1>
-                <span className="text-2xl opacity-80">원</span>
               </div>
               <div className="flex gap-4 text-sm text-white/70">
                 <span>예수금 {assetSummary ? formatAmount(assetSummary.depositReceived) : '-'}원</span>
