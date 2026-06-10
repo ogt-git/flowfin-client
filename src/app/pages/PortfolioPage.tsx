@@ -343,8 +343,7 @@ export default function PortfolioPage() {
                 </div>
               </div>
               <p className="text-2xl font-bold">
-                {formatAmount(portfolio.investableAmount)}
-                <span className="ml-1 text-base font-medium text-muted-foreground">원</span>
+                {formatAmount(portfolio.investableAmount)}원
               </p>
             </div>
             <div className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-5 shadow-sm">

@@ -5,6 +5,7 @@ export interface SignupPayload {
   email: string;
   password: string;
   termsVersion: string;
+  verificationToken?: string;
 }
 
 export interface LoginPayload {

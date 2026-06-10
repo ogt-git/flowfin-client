@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation } from 'react-router';
 import { ChevronLeft, ChevronRight, Pencil, Trash2, Loader2, RefreshCw, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
 import { fetchExpenses, updateExpenseCategory, deleteExpense, fetchMonthlyStats } from '../../api/expenses';
 import { syncCard } from '../../api/codef';
 import type { Expense, CategoryType, MonthlyStats } from '../../types/expense';
+import { CARD_ORGANIZATIONS } from '../../types/card';
+
+function cardName(code: string): string {
+  return CARD_ORGANIZATIONS.find((o) => o.code === code)?.name ?? code;
+}
 
 Chart.register(ArcElement, DoughnutController, Tooltip);
 
@@ -75,8 +81,10 @@ function useDoughnutChart(
 ) {
   const chartRef = useRef<Chart | null>(null);
   useEffect(() => {
-    if (!canvasRef.current) return;
+    const hasData = values.length > 0 && values.some(v => v > 0);
     chartRef.current?.destroy();
+    chartRef.current = null;
+    if (!canvasRef.current || !hasData) return;
     chartRef.current = new Chart(canvasRef.current, {
       type: 'doughnut',
       data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: 'transparent' }] },
@@ -94,6 +102,25 @@ function useDoughnutChart(
 
 // ── 메인 컴포넌트 ──────────────────────────────────────────
 export default function ExpensesPage() {
+  const location = useLocation();
+  const justLinked = !!(location.state as { justLinked?: boolean } | null)?.justLinked;
+
+  const SYNC_KEY = 'flowfin_card_syncing';
+
+  const PROGRESS_KEY = SYNC_KEY + '_progress';
+  const [syncProgress, setSyncProgress] = useState(() => {
+    if (justLinked) return 0;
+    return parseInt(sessionStorage.getItem(SYNC_KEY + '_progress') ?? '0', 10);
+  });
+  const [syncing, setSyncing] = useState(() => {
+    if (justLinked) { sessionStorage.setItem(SYNC_KEY, 'true'); return true; }
+    return sessionStorage.getItem(SYNC_KEY) === 'true';
+  });
+  const syncPhase = syncProgress < 30 ? '지출 내역을 수집하는 중...'
+                  : syncProgress < 70 ? '지출을 분류하는 중...'
+                  : syncProgress < 95 ? 'AI가 카테고리를 분석하는 중...'
+                  : '거의 다 됐어요!';
+
   const [month, setMonth]           = useState(() => toYYYYMM(new Date()));
   const [filterType, setFilterType] = useState<FilterType>('ALL');
   const [page, setPage]             = useState(0);
@@ -108,6 +135,7 @@ export default function ExpensesPage() {
   const [saving, setSaving]         = useState(false);
   const [stats, setStats]           = useState<MonthlyStats | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const seekedRef = useRef(false);
 
   const loadExpenses = useCallback(async () => {
     setLoading(true);
@@ -137,9 +165,129 @@ export default function ExpensesPage() {
     }
   }
 
-  useEffect(() => { setPage(0); }, [month, filterType]);
-  useEffect(() => { loadExpenses(); }, [loadExpenses]);
+  useEffect(() => { setPage(0); setStats(null); }, [month, filterType]);
+  useEffect(() => {
+    if (syncing) return;
+
+    if (!seekedRef.current) {
+      seekedRef.current = true;
+      const current = toYYYYMM(new Date());
+      (async () => {
+        for (let i = 0; i <= 12; i++) {
+          const m = shiftMonth(current, -i);
+          try {
+            const result = await fetchExpenses({ month: m, page: 0, size: 1 });
+            if (result.totalElements > 0) { setMonth(m); return; }
+          } catch { return; }
+        }
+      })();
+      return;
+    }
+
+    loadExpenses();
+  }, [loadExpenses, syncing]);
   useEffect(() => { fetchMonthlyStats(month).then(setStats).catch(() => {}); }, [month]);
+
+  useEffect(() => {
+    if (!syncing) return;
+
+    const MAX_WAIT = 120_000;
+    const POLL_INTERVAL = 4_000;
+    const MIN_DISPLAY = 3_000;
+    const startTime = Date.now();
+    let stopped = false;
+    let emptyCount = 0;
+    let isComplete = false;
+    let progress = parseInt(sessionStorage.getItem(PROGRESS_KEY) ?? '0', 10);
+    let tickTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // 95%까지 지수 감속, isComplete + 95% 이상일 때만 100%로 채움
+    const tick = () => {
+      if (stopped) return;
+
+      if (isComplete && progress >= 95) {
+        progress = Math.min(progress + 3, 100);
+      } else {
+        const increment = Math.max(0.3, (95 - progress) * 0.025);
+        progress = Math.min(progress + increment, 95);
+      }
+
+      const rounded = Math.round(progress);
+      setSyncProgress(rounded);
+      sessionStorage.setItem(PROGRESS_KEY, String(rounded));
+
+      if (rounded >= 100) {
+        // poll에서 이미 데이터를 state에 넣어뒀으므로 바로 화면 전환
+        const elapsed = Date.now() - startTime;
+        const delay = Math.max(0, MIN_DISPLAY - elapsed) + 400;
+        setTimeout(() => {
+          if (!stopped) {
+            stopped = true;
+            sessionStorage.removeItem(SYNC_KEY);
+            sessionStorage.removeItem(PROGRESS_KEY);
+            setSyncing(false);
+          }
+        }, delay);
+      } else {
+        tickTimer = setTimeout(tick, 100);
+      }
+    };
+
+    tickTimer = setTimeout(tick, 100);
+
+    async function poll() {
+      if (stopped) return;
+      try {
+        const result = await fetchExpenses({ month: toYYYYMM(new Date()), page: 0, size: 100 });
+        const total   = result.totalElements;
+        const pending = result.content.filter(e => e.classifiedBy === 'PENDING').length;
+
+        if (total > 0 && pending === 0) {
+          // 데이터 준비 완료 → 최근 달 탐색 후 state 미리 설정
+          const current = toYYYYMM(new Date());
+          for (let i = 0; i <= 12; i++) {
+            const m = shiftMonth(current, -i);
+            try {
+              const res = await fetchExpenses({ month: m, page: 0, size: PAGE_SIZE });
+              if (res.totalElements > 0) {
+                setMonth(m);
+                setExpenses(res.content);
+                setTotalPages(res.totalPages);
+                setTotalElements(res.totalElements);
+                setTotalAmount(res.totalAmount ?? 0);
+                fetchMonthlyStats(m).then(setStats).catch(() => {});
+                seekedRef.current = true;
+                break;
+              }
+            } catch { break; }
+          }
+          isComplete = true;
+          return;
+        } else if (total === 0) {
+          emptyCount++;
+          if (emptyCount >= 3) { isComplete = true; return; }
+        }
+      } catch { /* silent */ }
+
+      if (Date.now() - startTime >= MAX_WAIT) {
+        stopped = true;
+        if (tickTimer) clearTimeout(tickTimer);
+        sessionStorage.removeItem(SYNC_KEY);
+        sessionStorage.removeItem(PROGRESS_KEY);
+        setSyncing(false);
+        return;
+      }
+      setTimeout(poll, POLL_INTERVAL);
+    }
+
+    poll();
+
+    return () => {
+      stopped = true;
+      if (tickTimer) clearTimeout(tickTimer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const autoRefresh = useCallback(async () => {
     if (saving || editingId !== null || refreshing) return;
@@ -167,7 +315,8 @@ export default function ExpensesPage() {
       await updateExpenseCategory(editingId, editCategoryId);
       toast.success('카테고리가 수정되었습니다.');
       setEditingId(null);
-      loadExpenses();
+      await loadExpenses();
+      fetchMonthlyStats(month).then(setStats).catch(() => {});
     } catch { toast.error('카테고리 수정에 실패했습니다.'); }
     finally { setSaving(false); }
   }
@@ -177,7 +326,8 @@ export default function ExpensesPage() {
     try {
       await deleteExpense(id);
       toast.success('삭제되었습니다.');
-      loadExpenses();
+      await loadExpenses();
+      fetchMonthlyStats(month).then(setStats).catch(() => {});
     } catch { toast.error('삭제에 실패했습니다.'); }
   }
 
@@ -212,6 +362,53 @@ export default function ExpensesPage() {
   const isCurrentMonth = month >= currentMonth;
   const windowStart  = Math.max(0, Math.min(page - 2, totalPages - 5));
   const pageNumbers  = Array.from({ length: Math.min(5, totalPages) }, (_, i) => windowStart + i);
+
+  if (syncing) {
+    const steps = ['지출 내역 수집', '지출 분류', 'AI 카테고리 분석', '완료'];
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-4 lg:p-8">
+        <div className="w-full max-w-sm rounded-2xl border border-border bg-white p-8 shadow-sm">
+          <div className="mb-6 flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+          </div>
+          <p className="mb-1 text-center text-base font-semibold">{syncPhase}</p>
+          <p className="mb-6 text-center text-xs text-muted-foreground">페이지를 닫지 마세요. 곧 지출 내역이 표시됩니다.</p>
+
+          <div className="mb-2 flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">진행률</span>
+            <span className="font-semibold text-primary">{syncProgress}%</span>
+          </div>
+          <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-secondary">
+            <div
+              className="h-2 rounded-full bg-primary transition-[width] duration-200"
+              style={{ width: `${syncProgress}%` }}
+            />
+          </div>
+
+          <div className="space-y-2.5">
+            {steps.map((label, i) => {
+              const threshold = i * 25;
+              const done   = syncProgress >= threshold + 25;
+              const active = syncProgress >= threshold && !done;
+              return (
+                <div key={i} className="flex items-center gap-2.5 text-sm">
+                  <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold
+                    ${done ? 'bg-primary text-white' : active ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+                    {done ? '✓' : i + 1}
+                  </span>
+                  <span className={done ? 'text-foreground' : active ? 'font-medium text-primary' : 'text-muted-foreground'}>
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 lg:p-8">
@@ -300,8 +497,22 @@ export default function ExpensesPage() {
         {/* 지출 목록 */}
         <div>
           {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-border bg-white py-16 shadow-sm">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground">지출 내역을 불러오는 중...</p>
+                <p className="mt-1 text-xs text-muted-foreground">카드 연동 직후라면 잠시 더 걸릴 수 있습니다.</p>
+              </div>
+              <div className="w-40 space-y-1.5">
+                {['내역 조회', '카테고리 분류', '화면 구성'].map((label, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" style={{ animationDelay: `${i * 0.2}s` }} />
+                    {label}
+                  </div>
+                ))}
+              </div>
             </div>
           ) : expenses.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-20">
@@ -322,7 +533,7 @@ export default function ExpensesPage() {
                   <div className="flex-1 min-w-0">
                     <p className="truncate font-medium text-sm">{expense.merchantName}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {expense.expenseDate} · {expense.cardCompany}
+                      {expense.expenseDate.slice(0, 10)} · {cardName(expense.cardCompany)}
                     </p>
                   </div>
 
@@ -430,12 +641,13 @@ export default function ExpensesPage() {
 
           {/* 도넛 차트 */}
           <div className="relative mt-4 h-[160px] w-full">
-            <canvas ref={canvasRef} role="img" aria-label="지출 비율 차트" />
-            {/* 중앙 레이블 */}
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-[10px] text-muted-foreground">항목</p>
-              <p className="text-sm font-bold">{chartLabels.length}개</p>
-            </div>
+            {chartValues.some(v => v > 0) ? (
+              <canvas ref={canvasRef} role="img" aria-label="지출 비율 차트" />
+            ) : (
+              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                차트 데이터가 없습니다
+              </div>
+            )}
           </div>
 
           {/* 범례 */}

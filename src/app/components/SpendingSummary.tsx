@@ -15,14 +15,13 @@ export function SpendingSummary({ totalSpent, changePercent, isIncrease }: Spend
 
       <div className="relative z-10">
         <p className="mb-2 opacity-90">최근 달 총 지출</p>
-        <div className="mb-4 flex items-baseline gap-2">
+        <div className="mb-4">
           <h1
             className="text-5xl tracking-tight"
             style={{ fontFamily: 'var(--font-family-display)' }}
           >
-            {totalSpent.toLocaleString('ko-KR')}
+            {totalSpent.toLocaleString('ko-KR')}원
           </h1>
-          <span className="text-2xl opacity-80">원</span>
         </div>
 
         <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 ${

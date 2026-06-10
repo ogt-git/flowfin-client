@@ -1,5 +1,5 @@
 export type CategoryType = 'FIXED' | 'VARIABLE' | 'ETC';
-export type ClassifiedBy = 'RULE' | 'AI' | 'USER';
+export type ClassifiedBy = 'RULE' | 'AI' | 'USER' | 'PENDING';
 
 export interface Expense {
   expenseId: number;
