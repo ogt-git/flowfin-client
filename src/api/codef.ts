@@ -54,3 +54,9 @@ export async function syncStock(): Promise<CodefSyncResult> {
   const res = await api.post<ApiResponse<CodefSyncResult>>('/api/codef/sync/stock');
   return res.data.data;
 }
+
+// 초기 동기화 상태 조회 — GET /api/codef/sync/status
+export async function fetchSyncStatus(type: 'CARD' | 'STOCK'): Promise<'SYNCING' | 'DONE' | 'FAILED'> {
+  const res = await api.get<ApiResponse<string>>('/api/codef/sync/status', { params: { type } });
+  return res.data.data as 'SYNCING' | 'DONE' | 'FAILED';
+}
