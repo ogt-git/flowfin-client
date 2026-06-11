@@ -277,7 +277,7 @@ export default function StockDashboardPage() {
       if (rounded >= 100) {
         // poll에서 이미 데이터를 state에 넣어뒀으므로 바로 화면 전환
         const elapsed = Date.now() - startTime;
-        const delay = Math.max(0, MIN_DISPLAY - elapsed) + 400;
+        const delay = Math.max(0, MIN_DISPLAY - elapsed) + 3_400;
         setTimeout(() => {
           if (!stopped) {
             stopped = true;
@@ -373,7 +373,7 @@ export default function StockDashboardPage() {
             </div>
           </div>
           <p className="mb-1 text-center text-base font-semibold">{syncPhase}</p>
-          <p className="mb-6 text-center text-xs text-muted-foreground">페이지를 닫지 마세요. 곧 증권 현황이 표시됩니다.</p>
+          <p className="mb-6 text-center text-xs text-muted-foreground">곧 증권 현황이 표시됩니다.</p>
 
           <div className="mb-2 flex items-center justify-between text-xs">
             <span className="text-muted-foreground">진행률</span>

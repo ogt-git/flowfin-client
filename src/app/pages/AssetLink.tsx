@@ -206,7 +206,7 @@ export default function AssetLink() {
             </div>
           </div>
           <p className="mb-1 text-base font-semibold">{connectingMsg}</p>
-          <p className="text-xs text-muted-foreground">잠시만 기다려주세요. 페이지를 닫지 마세요.</p>
+          <p className="text-xs text-muted-foreground">잠시만 기다려주세요.</p>
         </div>
       </div>
     );
