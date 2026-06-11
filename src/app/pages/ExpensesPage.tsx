@@ -134,8 +134,8 @@ export default function ExpensesPage() {
   const [editCategoryId, setEditCategoryId] = useState(0);
   const [saving, setSaving]         = useState(false);
   const [stats, setStats]           = useState<MonthlyStats | null>(null);
+  const [recentMonthLoading, setRecentMonthLoading] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const seekedRef = useRef(false);
   const dataPreparedRef = useRef(false);
 
   const loadExpenses = useCallback(async () => {
@@ -151,6 +151,19 @@ export default function ExpensesPage() {
     } catch { toast.error('지출 내역을 불러오지 못했습니다.'); }
     finally { setLoading(false); }
   }, [month, filterType, page]);
+
+  async function goToRecentMonth() {
+    setRecentMonthLoading(true);
+    const current = toYYYYMM(new Date());
+    for (let i = 0; i <= 12; i++) {
+      const m = shiftMonth(current, -i);
+      try {
+        const result = await fetchExpenses({ month: m, page: 0, size: 1 });
+        if (result.totalElements > 0) { setMonth(m); break; }
+      } catch { break; }
+    }
+    setRecentMonthLoading(false);
+  }
 
   async function reload() {
     setRefreshing(true);
@@ -172,21 +185,6 @@ export default function ExpensesPage() {
 
     if (dataPreparedRef.current) {
       dataPreparedRef.current = false;
-      return;
-    }
-
-    if (!seekedRef.current) {
-      seekedRef.current = true;
-      const current = toYYYYMM(new Date());
-      (async () => {
-        for (let i = 0; i <= 12; i++) {
-          const m = shiftMonth(current, -i);
-          try {
-            const result = await fetchExpenses({ month: m, page: 0, size: 1 });
-            if (result.totalElements > 0) { setMonth(m); return; }
-          } catch { return; }
-        }
-      })();
       return;
     }
 
@@ -263,23 +261,13 @@ export default function ExpensesPage() {
 
         if (total > 0 && pending === 0) {
           const current = toYYYYMM(new Date());
-          for (let i = 0; i <= 12; i++) {
-            const m = shiftMonth(current, -i);
-            try {
-              const res = await fetchExpenses({ month: m, page: 0, size: PAGE_SIZE });
-              if (res.totalElements > 0) {
-                setMonth(m);
-                setExpenses(res.content);
-                setTotalPages(res.totalPages);
-                setTotalElements(res.totalElements);
-                setTotalAmount(res.totalAmount ?? 0);
-                fetchMonthlyStats(m).then(setStats).catch(() => {});
-                seekedRef.current = true;
-                dataPreparedRef.current = true;
-                break;
-              }
-            } catch { break; }
-          }
+          const res = await fetchExpenses({ month: current, page: 0, size: PAGE_SIZE });
+          setExpenses(res.content);
+          setTotalPages(res.totalPages);
+          setTotalElements(res.totalElements);
+          setTotalAmount(res.totalAmount ?? 0);
+          fetchMonthlyStats(current).then(setStats).catch(() => {});
+          dataPreparedRef.current = true;
           isComplete = true;
           return;
         }
@@ -539,8 +527,17 @@ export default function ExpensesPage() {
             </div>
           ) : expenses.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-20">
-              <Receipt className="h-10 w-10 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">지출 내역이 없습니다.</p>
+              {/*<Receipt className="h-10 w-10 text-muted-foreground/30" />*/}
+              <p className="text-sm text-muted-foreground">해당 달 지출 내역이 없습니다.</p>
+              {filterType === 'ALL' && (
+                <button
+                  onClick={goToRecentMonth}
+                  disabled={recentMonthLoading}
+                  className="rounded-xl border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-secondary disabled:opacity-50"
+                >
+                  {recentMonthLoading ? '찾는 중...' : '최근 지출 달로 이동'}
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
