@@ -136,6 +136,7 @@ export default function ExpensesPage() {
   const [stats, setStats]           = useState<MonthlyStats | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const seekedRef = useRef(false);
+  const dataPreparedRef = useRef(false);
 
   const loadExpenses = useCallback(async () => {
     setLoading(true);
@@ -168,6 +169,11 @@ export default function ExpensesPage() {
   useEffect(() => { setPage(0); setStats(null); }, [month, filterType]);
   useEffect(() => {
     if (syncing) return;
+
+    if (dataPreparedRef.current) {
+      dataPreparedRef.current = false;
+      return;
+    }
 
     if (!seekedRef.current) {
       seekedRef.current = true;
@@ -257,6 +263,7 @@ export default function ExpensesPage() {
                 setTotalAmount(res.totalAmount ?? 0);
                 fetchMonthlyStats(m).then(setStats).catch(() => {});
                 seekedRef.current = true;
+                dataPreparedRef.current = true;
                 break;
               }
             } catch { break; }

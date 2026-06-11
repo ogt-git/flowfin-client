@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router';
 import { motion, type Variants } from 'motion/react';
@@ -192,6 +192,8 @@ export default function StockDashboardPage() {
                   : syncProgress < 95 ? '보유 종목을 정리하는 중...'
                   : '거의 다 됐어요!';
 
+  const dataPreparedRef = useRef(false);
+
   const [assetSummary, setAssetSummary]   = useState<AssetSummaryData | null>(null);
   const [stocks, setStocks]               = useState<StockAccount[]>([]);
   const [manualAssets, setManualAssets]   = useState<ManualAssetItem[]>([]);
@@ -234,7 +236,16 @@ export default function StockDashboardPage() {
     }
   }
 
-  useEffect(() => { if (!stockSyncing) load(); }, [stockSyncing]);
+  useEffect(() => {
+    if (!stockSyncing) {
+      if (dataPreparedRef.current) {
+        dataPreparedRef.current = false;
+        setLoading(false);
+        return;
+      }
+      load();
+    }
+  }, [stockSyncing]);
 
   useEffect(() => {
     if (!stockSyncing) return;
@@ -295,6 +306,7 @@ export default function StockDashboardPage() {
           setStocks(result);
           setStockError(false);
           if (manualResult.status === 'fulfilled') setManualAssets(manualResult.value);
+          dataPreparedRef.current = true;
           isComplete = true;
           return;
         } else {
