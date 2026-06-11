@@ -321,7 +321,7 @@ export default function StockDashboardPage() {
           dataPreparedRef.current = true;
           isComplete = true;
           return;
-        } else if (syncStatus === 'FAILED') {
+        } else if (syncStatus === 'DONE' || syncStatus === 'FAILED') {
           isComplete = true;
           return;
         }

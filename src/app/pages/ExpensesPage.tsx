@@ -286,7 +286,7 @@ export default function ExpensesPage() {
 
         if (total > 0 && pending > 0) {
           // AI 분류 중 → 계속 폴링
-        } else if (syncStatus === 'FAILED') {
+        } else if (syncStatus === 'DONE' || syncStatus === 'FAILED') {
           isComplete = true;
           return;
         }
