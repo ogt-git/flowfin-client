@@ -103,6 +103,11 @@ export default function AssetLink() {
       setKeyFile(null);
       return;
     }
+    if (name === 'accountNumber') {
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 20);
+      setApiForm((prev) => ({ ...prev, accountNumber: digitsOnly }));
+      return;
+    }
     setApiForm((prev) => ({ ...prev, [name]: value }) as ApiLinkForm);
   }
 
@@ -121,6 +126,9 @@ export default function AssetLink() {
     } else {
       if (!apiForm.id || !apiForm.password) { toast.error('아이디와 비밀번호를 입력해주세요.'); return; }
     }
+    if (!apiForm.accountNumber) { toast.error('계좌번호를 입력해주세요.'); return; }
+    if (apiForm.accountNumber.length < 8) { toast.error('계좌번호는 8자리 이상 입력해주세요.'); return; }
+    if (!apiForm.accountPassword) { toast.error('계좌 비밀번호를 입력해주세요.'); return; }
 
     setLoading(true);
     setConnectingMsg('증권사에 연결하는 중...');
@@ -351,6 +359,8 @@ export default function AssetLink() {
                     value={apiForm.accountNumber}
                     onChange={handleApiChange}
                     placeholder="계좌번호 입력 (숫자만)"
+                    inputMode="numeric"
+                    maxLength={20}
                     className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
@@ -398,6 +408,8 @@ export default function AssetLink() {
                     value={apiForm.accountNumber}
                     onChange={handleApiChange}
                     placeholder="계좌번호 입력 (숫자만)"
+                    inputMode="numeric"
+                    maxLength={20}
                     className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
