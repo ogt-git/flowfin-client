@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Pencil, Trash2, Loader2, RefreshCw, Receipt 
 import { toast } from 'sonner';
 import { Chart, ArcElement, DoughnutController, Tooltip } from 'chart.js';
 import { fetchExpenses, updateExpenseCategory, deleteExpense, fetchMonthlyStats } from '../../api/expenses';
-import { syncCard } from '../../api/codef';
+import { syncCard, fetchSyncStatus } from '../../api/codef';
 import type { Expense, CategoryType, MonthlyStats } from '../../types/expense';
 import { CARD_ORGANIZATIONS } from '../../types/card';
 
@@ -202,7 +202,6 @@ export default function ExpensesPage() {
     const MIN_DISPLAY = 3_000;
     const startTime = Date.now();
     let stopped = false;
-    let emptyCount = 0;
     let isComplete = false;
     let progress = parseInt(sessionStorage.getItem(PROGRESS_KEY) ?? '0', 10);
     let tickTimer: ReturnType<typeof setTimeout> | null = null;
@@ -244,12 +243,25 @@ export default function ExpensesPage() {
     async function poll() {
       if (stopped) return;
       try {
+        const syncStatus = await fetchSyncStatus('CARD');
+        if (syncStatus === 'SYNCING') {
+          if (Date.now() - startTime < MAX_WAIT) {
+            setTimeout(poll, POLL_INTERVAL);
+          } else {
+            stopped = true;
+            if (tickTimer) clearTimeout(tickTimer);
+            sessionStorage.removeItem(SYNC_KEY);
+            sessionStorage.removeItem(PROGRESS_KEY);
+            setSyncing(false);
+          }
+          return;
+        }
+
         const result = await fetchExpenses({ month: toYYYYMM(new Date()), page: 0, size: 100 });
         const total   = result.totalElements;
         const pending = result.content.filter(e => e.classifiedBy === 'PENDING').length;
 
         if (total > 0 && pending === 0) {
-          // 데이터 준비 완료 → 최근 달 탐색 후 state 미리 설정
           const current = toYYYYMM(new Date());
           for (let i = 0; i <= 12; i++) {
             const m = shiftMonth(current, -i);
@@ -270,9 +282,13 @@ export default function ExpensesPage() {
           }
           isComplete = true;
           return;
-        } else if (total === 0) {
-          emptyCount++;
-          if (emptyCount >= 3) { isComplete = true; return; }
+        }
+
+        if (total > 0 && pending > 0) {
+          // AI 분류 중 → 계속 폴링
+        } else if (syncStatus === 'FAILED') {
+          isComplete = true;
+          return;
         }
       } catch { /* silent */ }
 

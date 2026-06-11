@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { fetchAssetSummary, fetchStocks, fetchManualAssets, deleteManualAsset } from '../../api/assets';
-import { syncStock } from '../../api/codef';
+import { syncStock, fetchSyncStatus } from '../../api/codef';
 import type { AssetSummaryData, StockAccount, StockItem, ManualAssetItem } from '../../types/asset';
 import { STOCK_ORGANIZATIONS } from '../../types/card';
 
@@ -255,7 +255,6 @@ export default function StockDashboardPage() {
     const MIN_DISPLAY = 3_000;
     const startTime = Date.now();
     let stopped = false;
-    let emptyCount = 0;
     let isComplete = false;
     let progress = parseInt(sessionStorage.getItem(STOCK_PROGRESS_KEY) ?? '0', 10);
     let tickTimer: ReturnType<typeof setTimeout> | null = null;
@@ -296,9 +295,22 @@ export default function StockDashboardPage() {
     async function poll() {
       if (stopped) return;
       try {
+        const syncStatus = await fetchSyncStatus('STOCK');
+        if (syncStatus === 'SYNCING') {
+          if (Date.now() - startTime < MAX_WAIT) {
+            setTimeout(poll, POLL_INTERVAL);
+          } else {
+            stopped = true;
+            if (tickTimer) clearTimeout(tickTimer);
+            sessionStorage.removeItem(STOCK_SYNC_KEY);
+            sessionStorage.removeItem(STOCK_PROGRESS_KEY);
+            setStockSyncing(false);
+          }
+          return;
+        }
+
         const result = await fetchStocks();
         if (result.length > 0) {
-          // 데이터 준비 완료 → 나머지 데이터도 함께 로드 후 state 설정
           const [summaryResult, manualResult] = await Promise.allSettled([
             fetchAssetSummary(), fetchManualAssets(),
           ]);
@@ -309,9 +321,9 @@ export default function StockDashboardPage() {
           dataPreparedRef.current = true;
           isComplete = true;
           return;
-        } else {
-          emptyCount++;
-          if (emptyCount >= 3) { isComplete = true; return; }
+        } else if (syncStatus === 'FAILED') {
+          isComplete = true;
+          return;
         }
       } catch { /* silent */ }
 
