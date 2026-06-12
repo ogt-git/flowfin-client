@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Mail, KeyRound, CheckCircle2 } from 'lucide-react';
 import { requestPasswordReset, confirmPasswordReset } from '../../../api/auth';
@@ -39,6 +39,21 @@ export default function ForgotPasswordModal({ onClose, initialEmail = '' }: Prop
   const [confirmError, setConfirmError] = useState('');
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [confirmError2, setConfirmError2] = useState('');
+  const [otpTimeLeft, setOtpTimeLeft] = useState(0);
+  const otpTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startOtpTimer = () => {
+    if (otpTimerRef.current) clearInterval(otpTimerRef.current);
+    setOtpTimeLeft(300);
+    otpTimerRef.current = setInterval(() => {
+      setOtpTimeLeft(prev => {
+        if (prev <= 1) { clearInterval(otpTimerRef.current!); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => () => { if (otpTimerRef.current) clearInterval(otpTimerRef.current); }, []);
 
   const startCooldown = () => {
     setCooldown(15);
@@ -61,6 +76,7 @@ export default function ForgotPasswordModal({ onClose, initialEmail = '' }: Prop
       await requestPasswordReset(email);
       setStep('otp');
       startCooldown();
+      startOtpTimer();
     } catch (e: any) {
       const msg = e?.response?.data?.message;
       if (e?.response?.status === 404) {
@@ -82,6 +98,7 @@ export default function ForgotPasswordModal({ onClose, initialEmail = '' }: Prop
     try {
       await requestPasswordReset(email);
       startCooldown();
+      startOtpTimer();
     } catch (e: any) {
       if (e?.response?.status === 429) {
         setSendError('잠시 후 다시 시도해주세요. (15초 제한)');
@@ -218,13 +235,21 @@ export default function ForgotPasswordModal({ onClose, initialEmail = '' }: Prop
                 />
                 {otpError && <p className="mt-1 text-xs text-destructive">{otpError}</p>}
                 <div className="mt-1 flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">5분 이내 입력해주세요.</p>
+                  {otpTimeLeft > 0 ? (
+                    <p className="text-xs text-destructive">
+                      남은 시간 <span className="font-medium">
+                        {String(Math.floor(otpTimeLeft / 60)).padStart(2, '0')}:{String(otpTimeLeft % 60).padStart(2, '0')}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="text-xs font-medium text-destructive">인증 시간이 만료됐습니다.</p>
+                  )}
                   <button
                     onClick={handleResend}
                     disabled={cooldown > 0 || sendLoading}
                     className="text-xs text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {cooldown > 0 ? `재발송 (${cooldown}s)` : '재발송'}
+                    재발송
                   </button>
                 </div>
               </div>

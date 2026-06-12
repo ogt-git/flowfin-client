@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import { motion } from 'motion/react';
 import { signup, requestEmailVerify, confirmEmailVerify } from '../../../api/auth';
@@ -94,6 +94,8 @@ export default function SignupPage({
   const [emailVerified, setEmailVerified] = useState(false);
   const [verificationToken, setVerificationToken] = useState('');
   const [cooldown, setCooldown] = useState(0);
+  const [otpTimeLeft, setOtpTimeLeft] = useState(0);
+  const otpTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [terms, setTerms] = useState<TermsState>({ service: false, privacy: false, thirdParty: false });
   const [openModal, setOpenModal] = useState<TermsKey | null>(null);
@@ -128,6 +130,19 @@ export default function SignupPage({
     }, 1000);
   };
 
+  const startOtpTimer = () => {
+    if (otpTimerRef.current) clearInterval(otpTimerRef.current);
+    setOtpTimeLeft(300);
+    otpTimerRef.current = setInterval(() => {
+      setOtpTimeLeft(prev => {
+        if (prev <= 1) { clearInterval(otpTimerRef.current!); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => () => { if (otpTimerRef.current) clearInterval(otpTimerRef.current); }, []);
+
   const handleSendOtp = async () => {
     const err = validateEmail(form.email);
     setErrors(e => ({ ...e, email: err }));
@@ -140,6 +155,7 @@ export default function SignupPage({
       setOtpSent(true);
       setOtpError('');
       startCooldown();
+      startOtpTimer();
     } catch (e: any) {
       const status = e?.response?.status;
       if (status === 409) setErrors(ev => ({ ...ev, email: '이미 사용 중인 이메일입니다.' }));
@@ -275,7 +291,7 @@ export default function SignupPage({
                 disabled={emailVerified || sendLoading || (otpSent && cooldown > 0)}
                 className="shrink-0 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {sendLoading ? '발송 중...' : otpSent && cooldown > 0 ? `재발송 (${cooldown}s)` : otpSent ? '재발송' : '인증코드 발송'}
+                {sendLoading ? '발송 중...' : otpSent ? '재발송' : '인증코드 발송'}
               </button>
             </div>
             {touched.email && errors.email && (
@@ -285,28 +301,37 @@ export default function SignupPage({
               <p className="mt-1 text-xs text-emerald-600">✓ 이메일 인증 완료</p>
             )}
             {otpSent && !emailVerified && (
-              <div className="mt-2 flex gap-2">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={otp}
-                  onChange={e => { setOtp(e.target.value.replace(/\D/g, '')); setOtpError(''); }}
-                  onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()}
-                  placeholder="인증코드 6자리"
-                  className={`flex-1 rounded-xl border bg-input-background px-4 py-3 text-center tracking-widest outline-none transition-colors focus:border-primary ${
-                    otpError ? 'border-destructive' : 'border-border'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={handleVerifyOtp}
-                  disabled={otpLoading}
-                  className="shrink-0 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  {otpLoading ? '확인 중...' : '확인'}
-                </button>
-              </div>
+              <>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otp}
+                    onChange={e => { setOtp(e.target.value.replace(/\D/g, '')); setOtpError(''); }}
+                    onKeyDown={e => e.key === 'Enter' && handleVerifyOtp()}
+                    placeholder="인증코드 6자리"
+                    className={`flex-1 rounded-xl border bg-input-background px-4 py-3 text-center tracking-widest outline-none transition-colors focus:border-primary ${
+                      otpError ? 'border-destructive' : 'border-border'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={otpLoading}
+                    className="shrink-0 rounded-xl bg-primary px-4 py-3 text-sm text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {otpLoading ? '확인 중...' : '확인'}
+                  </button>
+                </div>
+                {otpTimeLeft > 0 && (
+                  <p className="mt-1 text-xs text-destructive">
+                    남은 시간 <span className="font-medium">
+                      {String(Math.floor(otpTimeLeft / 60)).padStart(2, '0')}:{String(otpTimeLeft % 60).padStart(2, '0')}
+                    </span>
+                  </p>
+                )}
+              </>
             )}
             {otpError && <p className="mt-1 text-xs text-destructive">{otpError}</p>}
           </div>

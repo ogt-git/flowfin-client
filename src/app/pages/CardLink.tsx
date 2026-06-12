@@ -42,6 +42,7 @@ export default function CardLink() {
   const [loading, setLoading] = useState(false);
   const [errorModal, setErrorModal] = useState<CodefModalInputUx | null>(null);
   const folderRef = useRef<HTMLInputElement>(null);
+  const [connectingMsg, setConnectingMsg] = useState('');
 
   const selectedCard = CARD_ORGANIZATIONS.find((c) => c.code === form.organization);
   const isHyundaiIdPw = form.organization === HYUNDAI_CODE && form.loginType === '1';
@@ -152,29 +153,45 @@ export default function CardLink() {
     }
 
     setLoading(true);
+    setConnectingMsg('카드사에 연결하는 중...');
     try {
       await connectAccount(buildPayload());
-      toast.success('카드 연동이 완료되었습니다. 잠시 후 지출내역 페이지로 이동합니다.');
-      setTimeout(() => navigate('/expenses'), 12000);
+      navigate('/expenses', { state: { justLinked: true } });
     } catch (err) {
-      handleCodefError(err);
-    } finally {
       setLoading(false);
+      setConnectingMsg('');
+      handleCodefError(err);
     }
   }
 
   async function handleRetry(values: { cardNumber: string; cardPassword: string }) {
     setErrorModal(null);
     setLoading(true);
+    setConnectingMsg('카드사에 연결하는 중...');
     try {
       await connectAccount(buildPayload(values));
-      toast.success('카드 연동이 완료되었습니다. 잠시 후 지출내역 페이지로 이동합니다.');
-      setTimeout(() => navigate('/expenses'), 12000);
+      navigate('/expenses', { state: { justLinked: true } });
     } catch (err) {
-      handleCodefError(err);
-    } finally {
       setLoading(false);
+      setConnectingMsg('');
+      handleCodefError(err);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-4 lg:p-8">
+        <div className="w-full max-w-sm rounded-2xl border border-border bg-white p-8 shadow-sm text-center">
+          <div className="mb-6 flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+          </div>
+          <p className="mb-1 text-base font-semibold">{connectingMsg}</p>
+          <p className="text-xs text-muted-foreground">잠시만 기다려주세요.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -381,6 +398,7 @@ export default function CardLink() {
                 </div>
               </div>
       </form>
+
     </div>
   );
 }

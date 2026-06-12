@@ -19,8 +19,10 @@ export function RecentTransaction({ merchant, date, amount, category }: Transact
         </div>
       </div>
 
-      <p className="text-lg" style={{ fontFamily: 'var(--font-family-display)' }}>
-        -{amount.toLocaleString('ko-KR')}원
+      <p className={`text-lg ${amount < 0 ? 'text-emerald-600' : 'text-red-500'}`} style={{ fontFamily: 'var(--font-family-display)' }}>
+        {amount < 0
+          ? `+${Math.abs(amount).toLocaleString('ko-KR')}원`
+          : `-${amount.toLocaleString('ko-KR')}원`}
       </p>
     </div>
   );

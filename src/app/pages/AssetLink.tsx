@@ -70,6 +70,7 @@ export default function AssetLink() {
   const [derFile, setDerFile] = useState<File | null>(null);
   const [keyFile, setKeyFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [connectingMsg, setConnectingMsg] = useState('');
   const folderRef = useRef<HTMLInputElement>(null);
 
   function handleMainTabChange(tab: MainTab) {
@@ -102,6 +103,11 @@ export default function AssetLink() {
       setKeyFile(null);
       return;
     }
+    if (name === 'accountNumber') {
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 20);
+      setApiForm((prev) => ({ ...prev, accountNumber: digitsOnly }));
+      return;
+    }
     setApiForm((prev) => ({ ...prev, [name]: value }) as ApiLinkForm);
   }
 
@@ -120,8 +126,12 @@ export default function AssetLink() {
     } else {
       if (!apiForm.id || !apiForm.password) { toast.error('아이디와 비밀번호를 입력해주세요.'); return; }
     }
+    if (!apiForm.accountNumber) { toast.error('계좌번호를 입력해주세요.'); return; }
+    if (apiForm.accountNumber.length < 8) { toast.error('계좌번호는 8자리 이상 입력해주세요.'); return; }
+    if (!apiForm.accountPassword) { toast.error('계좌 비밀번호를 입력해주세요.'); return; }
 
     setLoading(true);
+    setConnectingMsg('증권사에 연결하는 중...');
     try {
       const payload: CodefConnectRequest = {
         organization: apiForm.organization,
@@ -134,9 +144,10 @@ export default function AssetLink() {
         ...(apiForm.loginType === '0' && { derFile: derFile!, keyFile: keyFile! }),
       };
       await connectAccount(payload);
-      toast.success('자산 연동이 완료되었습니다. 데이터는 약 10초 후 자동으로 불러와집니다.');
-      navigate('/stocks');
+      navigate('/stocks', { state: { justLinked: true } });
     } catch (err: unknown) {
+      setLoading(false);
+      setConnectingMsg('');
       const axiosErr = err as { response?: { data?: { message?: string }; status?: number } };
       const serverMsg = axiosErr.response?.data?.message;
       const status = axiosErr.response?.status;
@@ -147,8 +158,6 @@ export default function AssetLink() {
       } else {
         toast.error('자산 연동에 실패했습니다. 잠시 후 다시 시도해주세요.');
       }
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -185,6 +194,22 @@ export default function AssetLink() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-4 lg:p-8">
+        <div className="w-full max-w-sm rounded-2xl border border-border bg-white p-8 shadow-sm text-center">
+          <div className="mb-6 flex justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+          </div>
+          <p className="mb-1 text-base font-semibold">{connectingMsg}</p>
+          <p className="text-xs text-muted-foreground">잠시만 기다려주세요.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -334,6 +359,8 @@ export default function AssetLink() {
                     value={apiForm.accountNumber}
                     onChange={handleApiChange}
                     placeholder="계좌번호 입력 (숫자만)"
+                    inputMode="numeric"
+                    maxLength={20}
                     className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
@@ -381,6 +408,8 @@ export default function AssetLink() {
                     value={apiForm.accountNumber}
                     onChange={handleApiChange}
                     placeholder="계좌번호 입력 (숫자만)"
+                    inputMode="numeric"
+                    maxLength={20}
                     className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                   />
                 </div>

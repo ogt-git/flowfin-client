@@ -1,5 +1,13 @@
+import axios from 'axios';
 import http from './http';
 import type { CodefConnectRequest, ApiResponse, CodefSyncResult, CodefConnection } from '../types/codef';
+
+export function extractCodefErrorCode(error: unknown): string | null {
+  if (axios.isAxiosError(error)) {
+    return error.response?.data?.errorCode ?? null;
+  }
+  return null;
+}
 
 const api = http;
 
@@ -45,4 +53,10 @@ export async function syncCard(): Promise<CodefSyncResult> {
 export async function syncStock(): Promise<CodefSyncResult> {
   const res = await api.post<ApiResponse<CodefSyncResult>>('/api/codef/sync/stock');
   return res.data.data;
+}
+
+// 초기 동기화 상태 조회 — GET /api/codef/sync/status
+export async function fetchSyncStatus(type: 'CARD' | 'STOCK'): Promise<'SYNCING' | 'DONE' | 'FAILED'> {
+  const res = await api.get<ApiResponse<string>>('/api/codef/sync/status', { params: { type } });
+  return res.data.data as 'SYNCING' | 'DONE' | 'FAILED';
 }
