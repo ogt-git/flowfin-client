@@ -179,7 +179,7 @@ export default function ExpensesPage() {
     }
   }
 
-  useEffect(() => { setPage(0); setStats(null); }, [month, filterType]);
+  useEffect(() => { setPage(0); }, [month, filterType]);
   useEffect(() => {
     if (syncing) return;
 
@@ -190,7 +190,7 @@ export default function ExpensesPage() {
 
     loadExpenses();
   }, [loadExpenses, syncing]);
-  useEffect(() => { fetchMonthlyStats(month).then(setStats).catch(() => {}); }, [month]);
+  useEffect(() => { setStats(null); fetchMonthlyStats(month).then(setStats).catch(() => {}); }, [month]);
 
   useEffect(() => {
     if (!syncing) return;
@@ -455,7 +455,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* ── 월별 유형별 요약 카드 (전체 필터일 때) ── */}
-      {filterType === 'ALL' && stats && (
+      {stats && (
         <div className="mb-6 grid grid-cols-3 gap-2 lg:gap-3">
           {[
             { label: '고정비',  amount: stats.fixedAmount,    key: '고정비'  },
@@ -471,9 +471,7 @@ export default function ExpensesPage() {
                   <p className={`text-xs font-medium ${s.text}`}>{label}</p>
                 </div>
                 <p className={`text-base font-bold lg:text-lg ${s.text}`}>
-                  {amount >= 10_000
-                    ? `${(amount / 10_000).toFixed(0)}만원`
-                    : `${amount.toLocaleString()}원`}
+                  {amount.toLocaleString()}원
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">{pct}%</p>
               </div>
@@ -690,7 +688,7 @@ export default function ExpensesPage() {
                       <div className="h-1 rounded-full transition-all" style={{ width: `${pct}%`, background: chartColors[i] }} />
                     </div>
                     <span className="w-16 text-right text-[10px] text-muted-foreground">
-                      {amt >= 10_000 ? `${(amt / 10_000).toFixed(0)}만` : amt.toLocaleString()}원
+                      {amt.toLocaleString()}원
                     </span>
                   </div>
                 </div>
