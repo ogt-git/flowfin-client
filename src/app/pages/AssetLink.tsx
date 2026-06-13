@@ -24,7 +24,6 @@ interface ManualAssetForm {
   assetName: string;
   purchasePrice: string;
   currentPrice: string;
-  purchaseDate: string;
   memo: string;
 }
 
@@ -41,7 +40,6 @@ const EMPTY_MANUAL_FORM: ManualAssetForm = {
   assetName: '',
   purchasePrice: '',
   currentPrice: '',
-  purchaseDate: '',
   memo: '',
 };
 
@@ -53,6 +51,21 @@ const MANUAL_SUB_TABS: { key: ManualSubTab; label: string; placeholder: string; 
   { key: 'pension',    label: '🧓 연금',    placeholder: '예) IRP, 연금저축펀드',  assetType: 'PENSION'     },
   { key: 'other',      label: '🚗 기타',    placeholder: '예) 자동차, 골드바',     assetType: 'ETC'         },
 ];
+
+interface FieldSpec { label: string; required: boolean; }
+interface AssetFieldConfig {
+  purchasePrice?: FieldSpec;   // undefined = 숨김
+  currentPrice: FieldSpec;
+}
+
+const FIELD_CONFIG: Record<ManualSubTab, AssetFieldConfig> = {
+  deposit:    {                                                           currentPrice: { label: '현재 잔액',   required: true } },
+  savings:    {                                                           currentPrice: { label: '납입 총액',   required: true } },
+  realestate: { purchasePrice: { label: '취득가액',    required: true  }, currentPrice: { label: '현재가액',    required: true } },
+  pension:    { purchasePrice: { label: '월 수령액',   required: true  }, currentPrice: { label: '현재 적립액', required: true } },
+  other:      { purchasePrice: { label: '취득가액',    required: false }, currentPrice: { label: '현재가액',    required: true } },
+  cash:       {                                                           currentPrice: { label: '보유 금액',   required: true } },
+};
 
 export default function AssetLink() {
   const navigate = useNavigate();
@@ -164,15 +177,14 @@ export default function AssetLink() {
   async function handleManualSubmit(e: FormEvent) {
     e.preventDefault();
     if (!manualForm.assetName.trim()) { toast.error('자산명을 입력해주세요.'); return; }
-    if (manualSubTab === 'cash') {
-      if (!manualForm.currentPrice) { toast.error('현재가액을 입력해주세요.'); return; }
-    } else {
-      if (!manualForm.purchasePrice || !manualForm.currentPrice) {
-        toast.error('취득가액과 현재가액을 입력해주세요.');
-        return;
-      }
-    }
 
+    const cfg = FIELD_CONFIG[manualSubTab];
+    if (cfg.purchasePrice?.required && !manualForm.purchasePrice) {
+      toast.error(`${cfg.purchasePrice.label}을(를) 입력해주세요.`); return;
+    }
+    if (!manualForm.currentPrice) {
+      toast.error(`${cfg.currentPrice.label}을(를) 입력해주세요.`); return;
+    }
     const subTab = MANUAL_SUB_TABS.find((s) => s.key === manualSubTab)!;
     const currentPrice = Number(manualForm.currentPrice);
     setLoading(true);
@@ -180,9 +192,8 @@ export default function AssetLink() {
       await createManualAsset({
         assetType: subTab.assetType,
         itemName: manualForm.assetName.trim(),
-        purchaseAmount: manualSubTab === 'cash' ? currentPrice : Number(manualForm.purchasePrice),
+        purchaseAmount: cfg.purchasePrice ? Number(manualForm.purchasePrice || 0) : currentPrice,
         valuationAmt: currentPrice,
-        ...(manualSubTab !== 'cash' && manualForm.purchaseDate && { purchaseDate: manualForm.purchaseDate }),
         ...(manualForm.memo.trim() && { memo: manualForm.memo.trim() }),
       });
       toast.success('자산이 등록되었습니다.');
@@ -463,60 +474,29 @@ export default function AssetLink() {
             />
           </div>
 
-          {manualSubTab === 'cash' ? (
-            <div>
-              <label className="mb-2 block text-sm font-medium">보유 금액 (원)</label>
-              <input
-                type="number"
-                name="currentPrice"
-                value={manualForm.currentPrice}
-                onChange={handleManualChange}
-                placeholder="0"
-                min="0"
-                className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium">취득가액 (원)</label>
-                  <input
-                    type="number"
-                    name="purchasePrice"
-                    value={manualForm.purchasePrice}
-                    onChange={handleManualChange}
-                    placeholder="0"
-                    min="0"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  />
+          {(() => {
+            const cfg = FIELD_CONFIG[manualSubTab];
+            const inputCls = "w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20";
+            return (
+              <>
+                <div className={cfg.purchasePrice ? 'grid grid-cols-2 gap-4' : ''}>
+                  {cfg.purchasePrice && (
+                    <div>
+                      <label className="mb-2 block text-sm font-medium">
+                        {cfg.purchasePrice.label} (원){!cfg.purchasePrice.required && ' (선택)'}
+                      </label>
+                      <input type="number" name="purchasePrice" value={manualForm.purchasePrice} onChange={handleManualChange} placeholder="0" min="0" className={inputCls} />
+                    </div>
+                  )}
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">{cfg.currentPrice.label} (원)</label>
+                    <input type="number" name="currentPrice" value={manualForm.currentPrice} onChange={handleManualChange} placeholder="0" min="0" className={inputCls} />
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium">현재가액 (원)</label>
-                  <input
-                    type="number"
-                    name="currentPrice"
-                    value={manualForm.currentPrice}
-                    onChange={handleManualChange}
-                    placeholder="0"
-                    min="0"
-                    className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">취득일자</label>
-                <input
-                  type="date"
-                  name="purchaseDate"
-                  value={manualForm.purchaseDate}
-                  onChange={handleManualChange}
-                  className="w-full rounded-xl border border-border bg-input-background px-4 py-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            </>
-          )}
+              </>
+            );
+          })()}
 
           <div>
             <label className="mb-2 block text-sm font-medium">메모 (선택)</label>
