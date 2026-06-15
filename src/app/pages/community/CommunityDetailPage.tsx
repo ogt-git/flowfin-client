@@ -2,7 +2,10 @@
 import { useNavigate, useParams } from 'react-router';
 import { motion, type Variants} from 'motion/react';
 import { ArrowLeft, Eye, Heart, MessageCircle, Pencil, Trash2, X } from 'lucide-react';
-import { fetchPost, fetchComments, deletePost, toggleLike, createComment, deleteComment, type PostDetail, type Comment } from '../../api/community';
+import { toast } from 'sonner';
+import { fetchPost, fetchComments, deletePost, toggleLike, createComment, deleteComment, updatePost, type PostDetail, type Comment } from '../../api/community';
+
+const CATEGORIES = ['소비절약', '투자', '카드/금융', '질문', '자유'];
 
 const CATEGORY_BAR: Record<string, string> = {
   '소비절약': 'bg-emerald-400',
@@ -30,6 +33,8 @@ export default function CommunityDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [commentInput, setCommentInput] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [changingCategory, setChangingCategory] = useState(false);
 
   const currentUser = localStorage.getItem('name') || '';
 
@@ -80,7 +85,25 @@ export default function CommunityDetailPage() {
     } : prev);
   };
 
-  const handleDelete = async () => {
+  const handleCategoryChange = async (newCategory: string) => {
+    if (!post || newCategory === post.category) {
+      setShowCategoryPicker(false);
+      return;
+    }
+    setChangingCategory(true);
+    setShowCategoryPicker(false);
+    try {
+      const updated = await updatePost(post.id, { title: post.title, content: post.content, category: newCategory });
+      setPost((prev) => prev ? { ...prev, category: updated.category } : prev);
+      toast.success('카테고리가 변경되었습니다.');
+    } catch {
+      toast.error('카테고리 변경에 실패했습니다.');
+    } finally {
+      setChangingCategory(false);
+    }
+  };
+
+const handleDelete = async () => {
     if (!id) return;
     setDeleting(true);
     try {
@@ -138,11 +161,43 @@ export default function CommunityDetailPage() {
           {/* 헤더 */}
           <div className="p-5 sm:p-8">
           <div className="mb-6 border-b border-border pb-6">
-            <div className="mb-3 flex items-center gap-2">
-              <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${CATEGORY_BADGE[post.category] ?? 'bg-primary/10 text-primary border-primary/20'}`}>
-                {post.category}
-              </span>
-              <span className="text-xs text-muted-foreground">{post.createdAt}</span>
+            <div className="mb-3">
+              <div className="flex items-center gap-2">
+                {isAuthor ? (
+                  <button
+                    type="button"
+                    disabled={changingCategory}
+                    onClick={() => setShowCategoryPicker((v) => !v)}
+                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 disabled:opacity-50 ${CATEGORY_BADGE[post.category] ?? 'bg-primary/10 text-primary border-primary/20'}`}
+                    title="카테고리 변경"
+                  >
+                    {changingCategory ? '변경 중...' : post.category}
+                  </button>
+                ) : (
+                  <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${CATEGORY_BADGE[post.category] ?? 'bg-primary/10 text-primary border-primary/20'}`}>
+                    {post.category}
+                  </span>
+                )}
+                <span className="text-xs text-muted-foreground">{post.createdAt}</span>
+              </div>
+              {showCategoryPicker && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => handleCategoryChange(cat)}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                        cat === post.category
+                          ? CATEGORY_BADGE[cat] + ' ring-2 ring-offset-1 ring-current'
+                          : 'border-border bg-white text-muted-foreground hover:border-primary hover:text-primary'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-start justify-between gap-4">
               <h2 style={{ fontFamily: 'var(--font-family-display)' }}>{post.title}</h2>
