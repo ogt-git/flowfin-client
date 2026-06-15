@@ -229,7 +229,7 @@ export function ThirdPartyConsentPage() {
         </p>
       </section>
 
-      {/* 체크박스 */}
+      {/* 체크박스
       <div className="mb-4 border-t border-gray-200 pt-4">
         <label className="flex cursor-pointer items-start gap-2">
           <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300" />
@@ -238,7 +238,7 @@ export function ThirdPartyConsentPage() {
             <span className="font-semibold text-gray-500">(선택)</span>
           </span>
         </label>
-      </div>
+      </div>*/}
 
       <p className="text-xs text-gray-400">부칙: 본 동의서는 2026년 6월 14일부터 시행합니다.</p>
     </div>
