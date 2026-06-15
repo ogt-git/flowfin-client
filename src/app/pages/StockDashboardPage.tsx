@@ -678,14 +678,15 @@ export default function StockDashboardPage() {
                     <th className="px-4 py-3 text-left   text-xs font-medium text-muted-foreground">자산명</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">유형</th>
                     <th className="px-4 py-3 text-right  text-xs font-medium text-muted-foreground">취득가액</th>
-                    <th className="px-4 py-3 text-right  text-xs font-medium text-muted-foreground">현재가액</th>
+                    <th className="px-4 py-3 text-right  text-xs font-medium text-muted-foreground">현재금액</th>
                     <th className="px-4 py-3 text-right  text-xs font-medium text-muted-foreground">평가손익</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">취득일</th>
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
                   {manualAssets.map((asset, i) => {
+                    const hasPurchase = ['REAL_ESTATE', 'PENSION', 'ETC'].includes(asset.assetType);
+                    const hasPL       = ['REAL_ESTATE', 'ETC'].includes(asset.assetType);
                     const pl    = (asset.valuationAmt ?? 0) - (asset.purchaseAmount ?? 0);
                     const isPos = pl >= 0;
                     const typeColor = ASSET_TYPE_COLORS[asset.assetType] ?? 'bg-gray-100 text-gray-500';
@@ -704,19 +705,18 @@ export default function StockDashboardPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3.5 text-right text-sm text-muted-foreground">
-                          {(asset.purchaseAmount ?? 0).toLocaleString()}원
+                          {hasPurchase ? `${(asset.purchaseAmount ?? 0).toLocaleString()}원` : '-'}
                         </td>
                         <td className="px-4 py-3.5 text-right text-sm font-medium">
                           {(asset.valuationAmt ?? 0).toLocaleString()}원
                         </td>
-                        <td className={`px-4 py-3.5 text-right text-sm font-semibold ${isPos ? 'text-emerald-600' : 'text-red-500'}`}>
-                          <span className={`inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-xs ${isPos ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                            {isPos ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                            {isPos ? '+' : ''}{pl.toLocaleString()}원
-                          </span>
-                        </td>
-                        <td className="px-4 py-3.5 text-center text-xs text-muted-foreground">
-                          {asset.purchaseDate ?? '-'}
+                        <td className="px-4 py-3.5 text-right text-sm font-semibold">
+                          {hasPL ? (
+                            <span className={`inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-xs ${isPos ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                              {isPos ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                              {isPos ? '+' : ''}{pl.toLocaleString()}원
+                            </span>
+                          ) : <span className="text-xs text-muted-foreground">-</span>}
                         </td>
                         <td className="px-4 py-3.5 text-center">
                           <button
