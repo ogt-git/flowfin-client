@@ -3,7 +3,7 @@
 Flowfin의 대시보드, 지출조회, 자산조회, AI 포트폴리오, 커뮤니티 화면을 제공하는 프론트엔드입니다.
 
 > 프로젝트 전체 소개, 아키텍처, 기능 설명, 트러블슈팅은 백엔드 레포 README를 참고합니다.  
-> 백엔드 README: <!-- TODO: 확인 필요 -->
+> 백엔드 README: (https://github.com/hecto-project-codefAPI/flowfin-server/blob/main/README.md)
 
 ## 기술 스택
 
