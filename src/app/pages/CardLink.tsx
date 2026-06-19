@@ -1,4 +1,4 @@
-﻿import { useState, useRef, type ChangeEvent } from 'react';
+﻿import { useState, useRef, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { Loader2, CreditCard, ChevronRight, FolderOpen } from 'lucide-react';
@@ -132,7 +132,8 @@ export default function CardLink() {
     }
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
     if (!form.organization) {
       toast.error('카드사를 선택해주세요.');
       return;
@@ -272,6 +273,7 @@ export default function CardLink() {
                   onChange={handleFolderSelect}
                 />
                 <button
+                  type="button"
                   onClick={() => folderRef.current?.click()}
                   className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${
                     derFile && keyFile
@@ -380,8 +382,7 @@ export default function CardLink() {
                       취소
                     </button>
                     <button
-                        type="button"
-                        onClick={handleSubmit}
+                        type="submit"
                         disabled={loading}
                         className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-medium text-white shadow-md transition-all hover:bg-primary/90 disabled:opacity-60"
                     >
