@@ -7,7 +7,10 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { fetchPortfolioStatus, fetchPortfolioHistory, recommendPortfolio } from '../../api/portfolio';
+import { fetchStocks } from '../../api/assets';
 import type { Portfolio, PortfolioResult, RecommendedAsset } from '../../types/portfolio';
+import type { StockAccount } from '../../types/asset';
+import { PortfolioComparison } from '../components/portfolio/PortfolioComparison';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -146,6 +149,11 @@ export default function PortfolioPage() {
   const [canRecommend, setCanRecommend] = useState(true);
   const [error, setError]               = useState(false);
 
+  // 현재 증권 비중 비교용 (추천 결과와 별개로, 실패해도 추천 결과 표시에는 영향 없음)
+  const [stocks, setStocks]             = useState<StockAccount[]>([]);
+  const [stocksLoading, setStocksLoading] = useState(true);
+  const [stocksError, setStocksError]   = useState(false);
+
   const pollingRef        = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -191,6 +199,7 @@ export default function PortfolioPage() {
   async function load() {
     setLoading(true);
     setError(false);
+    loadStocks();
     try {
       const [statusResult, historyResult] = await Promise.allSettled([
         fetchPortfolioStatus(), fetchPortfolioHistory(),
@@ -206,6 +215,18 @@ export default function PortfolioPage() {
       }
       if (historyResult.status === 'fulfilled') setHistory(historyResult.value);
     } finally { setLoading(false); }
+  }
+
+  async function loadStocks() {
+    setStocksLoading(true);
+    setStocksError(false);
+    try {
+      setStocks(await fetchStocks());
+    } catch {
+      setStocksError(true);
+    } finally {
+      setStocksLoading(false);
+    }
   }
 
   async function handleRecommend() {
@@ -431,6 +452,16 @@ export default function PortfolioPage() {
                 {assets.map((asset, i) => <AllocationRow key={i} asset={asset} index={i} />)}
               </div>
             </div>
+          </motion.div>
+
+          {/* 현재 증권 비중 비교 (보조 섹션 · 추천 결과와 별개) */}
+          <motion.div variants={itemVariants}>
+            <PortfolioComparison
+              allocation={assets}
+              stocks={stocks}
+              loading={stocksLoading}
+              error={stocksError}
+            />
           </motion.div>
 
           {/* 유의사항 — 원본 텍스트 유지 */}
